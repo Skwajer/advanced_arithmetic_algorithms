@@ -1,4 +1,5 @@
 #include "polynoms.h"
+#include <cmath>
 #include <cstddef>
 #include <vector>
 #include <iostream>
@@ -12,7 +13,13 @@ void Polynomial::normalize()
 }
 
 Polynomial::Polynomial(const std::vector<double>& coefficients)
-    : coeffs(coefficients)
+    : coeffs(coefficients), expansion_center(0.0)
+    {
+        normalize();
+    }
+
+Polynomial::Polynomial(const std::vector<double>& coefficients, double init_center)
+    : coeffs(coefficients), expansion_center(init_center)
     {
         normalize();
     }
@@ -114,7 +121,7 @@ std::pair<std::vector<double>, double> Polynomial::HornerDivide(double base_coef
     std::vector<double> quotient(n - 1);
     quotient[n - 2] = coeffs[n - 1];
 
-    for (auto i = n - 2; i > 0 ;i--)
+    for (auto i = n - 2; i >= 1; i--)
     {
         quotient[i - 1] = quotient[i] * base_coeff + coeffs[i];
     }
@@ -125,7 +132,7 @@ std::pair<std::vector<double>, double> Polynomial::HornerDivide(double base_coef
 
 std::vector<double> Polynomial::TaylorExpansion(double base_coeff) const
 {
-    std::vector<double> result;
+    std::vector<double> result{};
     std::vector<double> current_divisible = coeffs;
 
     while(current_divisible.size() > 0)
@@ -133,6 +140,7 @@ std::vector<double> Polynomial::TaylorExpansion(double base_coeff) const
         if (current_divisible.size() == 1)
         {
             result.push_back(current_divisible[0]);
+            break;
         }
 
         Polynomial poly(current_divisible);
@@ -144,29 +152,94 @@ std::vector<double> Polynomial::TaylorExpansion(double base_coeff) const
 }
 
 
-void Polynomial::get_decomposition_by_degrees(double a)
+void Polynomial::get_decomposition_to_degrees(double a)
 {
+    if (coeffs.size() == 0)
+    {
+        std::cout << "polynomial is empty" << std::endl;
+        return;
+    }
     std::vector<double> expansion; 
     expansion = TaylorExpansion(a);
-    
-    std::cout << "Разложение по степеням (x - " << a << "):\n";
-    
-    for (size_t k = 0; k < expansion.size(); k++) {
+    coeffs = expansion;
+    expansion_center = a;
+    print_decomposition_to_degrees();
+}
 
-        if (std::abs(expansion[k]) < Polynomial::EPSILON) continue;
+void Polynomial::print_decomposition_to_degrees() const
+{
+    expansion_center >= 0 ?
+    std::cout << "decomposition to degrees (x - " << expansion_center << "):\n"
+    :
+    std::cout << "decomposition to degrees (x + " << -expansion_center << "):\n";
+    
+    for (size_t k = 0; k < coeffs.size(); k++) 
+    {
+
+        if (std::abs(coeffs[k]) < Polynomial::EPSILON) continue;
         
-        std::cout << expansion[k];
+        std::cout << coeffs[k];
         if (k > 0) 
         {
-            std::cout << "(x - " << a << ")";
+            if (expansion_center > 0)
+            {
+                std::cout << "(x - " << expansion_center << ")";
+            }
+            else if (expansion_center < 0)
+            {
+                std::cout << "(x + " << -expansion_center << ")";
+            }
+            else 
+            {
+                std::cout << "x";
+            }
             if (k > 1) 
             {
                 std::cout << "^" << k;
             }
         }
         
-        if (k < expansion.size() - 1) std::cout << " + ";
+        if (k < coeffs.size() - 1) std::cout << " + ";
     }
     std::cout << std::endl;
 }
+
+Polynomial Polynomial::get_shifted_representation(double new_center) const
+{
+    double delta = new_center - expansion_center;
+     if (std::abs(delta) < Polynomial::EPSILON) 
+        {
+            return *this;
+        }
+    int n = coeffs.size() - 1;
+    std::vector<double> new_coeffs(n + 1, 0.0); 
+
+    for (int k = 0; k <= n; k++) 
+    {         
+        double binom = 1.0;
+        double delta_pow = 1.0;
+        
+        delta_pow = pow(delta, k);
+        
+        for (int j = 0; j <= k; j++) 
+        {
+            double contribution = coeffs[k] * binom * delta_pow;
+            new_coeffs[j] += contribution;
+            
+            
+            if (j < k) 
+            {
+                binom = binom * (k - j) / (j + 1);
+                delta_pow /= delta;
+            }
+        }
+        std::cout << "\n";
+    }
+
+std::cout << "DEBUG: new_coeffs = ";
+for (double x : new_coeffs) std::cout << x << " ";
+std::cout << " | delta = " << delta << "\n";
+    return Polynomial(new_coeffs, new_center);
+}
+
 

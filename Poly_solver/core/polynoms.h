@@ -7,6 +7,7 @@ class Polynomial
 {
     private:
     std::vector<double> coeffs;
+    double expansion_center;
 
     public:
     static constexpr double EPSILON = 1e-10;
@@ -16,6 +17,7 @@ class Polynomial
     {}
     
     Polynomial(const std::vector<double>& coefficients);
+    Polynomial(const std::vector<double>& coefficients, double init_center);
     Polynomial(std::initializer_list<double> init);
     
     Polynomial(const Polynomial& other) = default;
@@ -52,7 +54,11 @@ class Polynomial
     std::vector<double> TaylorExpansion(double base_coeff) const;
 
     public:
-    void get_decomposition_by_degrees(double a);
+    void print_decomposition_to_degrees() const;
+
+    public:
+    void get_decomposition_to_degrees(double a);
+    [[nodiscard]] Polynomial get_shifted_representation(double new_center) const;
 
     
     public:

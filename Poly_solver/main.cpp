@@ -20,9 +20,12 @@ int main()
     // }
     // }
 
-    std::vector<double> coeffs = {4, 3, 2, 1};  // x³ + 2x² + 3x + 4
-    Polynomial poly(coeffs);
+    std::vector<double> coeffs{4, 12, 7, 0, 1};  // x^4 + 0x^3 + 7x^2 + 12x^1 + 4
     
-    poly.get_decomposition_by_degrees(2);
+    Polynomial poly(coeffs);
+    poly.print_decomposition_to_degrees();
+    poly.get_decomposition_to_degrees(-3);
+    Polynomial shifted_poly = poly.get_shifted_representation(5);
+    shifted_poly.print_decomposition_to_degrees();
     return 0;
 }
