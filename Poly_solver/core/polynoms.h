@@ -2,11 +2,12 @@
 #include <iostream>
 #include <utility>
 #include <vector>
+#include <cmath>
 
 class Polynomial
 {
     private:
-    std::vector<double> coeffs;
+    std::vector<double> coeffs; // from junior to senior degrees
     double expansion_center;
 
     public:
@@ -56,13 +57,30 @@ class Polynomial
     public:
     void print_decomposition_to_degrees() const;
 
+
     public:
     void get_decomposition_to_degrees(double a);
     [[nodiscard]] Polynomial get_shifted_representation(double new_center) const;
-
+    double evaluateAt(double x) const;
+    static double limit_at_infinity(Polynomial const &f, Polynomial const &g, bool is_negate_infinity = false);
+    static double limit_at_endpoint(Polynomial const &f, Polynomial const &g, double x);
+    Polynomial compose(const Polynomial& g) const;
+    static Polynomial iterated_compose(const Polynomial& f, int k, const Polynomial& inner);
+    static double limit_T_at_point(
+    const Polynomial& f1, int k, const Polynomial& s1,
+    const Polynomial& f2, int l, const Polynomial& s2,
+    double A);
+    static double limit_T_at_infinity(
+    const Polynomial& f1, int k, const Polynomial& s1,
+    const Polynomial& f2, int l, const Polynomial& s2,
+    bool positive_infinity = true);
     
+
+
+
+
     public:
-    friend std::ostream& operator<<(std::ostream & os, const Polynomial & p);
+    friend std::ostream& operator<<(std::ostream &os, const Polynomial &p);
 };
 
 Polynomial operator*(double scalar, const Polynomial& p);
