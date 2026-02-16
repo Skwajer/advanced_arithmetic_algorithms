@@ -102,7 +102,7 @@ int main()
         Polynomial s1({0, 1});     // x
         int k = 2;
         
-        Polynomial f2({1});        // 1
+        Polynomial f2({1});            // 1
         Polynomial s2({0, 1});     // x
         int l = 1;
         
