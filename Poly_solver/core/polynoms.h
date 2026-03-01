@@ -1,8 +1,13 @@
+#ifndef POLYNOMS_H
+#define POLYNOMS_H
+
 #include <cstddef>
 #include <iostream>
 #include <utility>
 #include <vector>
 #include <cmath>
+
+class GF2n;
 
 class Polynomial
 {
@@ -14,9 +19,13 @@ class Polynomial
     static constexpr double EPSILON = 1e-10;
 
     public:
-    Polynomial() : coeffs({0.0}) 
+    Polynomial() : coeffs({0.0}), expansion_center(0.0)
     {}
     
+    Polynomial(size_t n, double init_elem)
+    {
+        coeffs = {};
+    }
     Polynomial(const std::vector<double>& coefficients);
     Polynomial(const std::vector<double>& coefficients, double init_center);
     Polynomial(std::initializer_list<double> init);
@@ -33,6 +42,8 @@ class Polynomial
     Polynomial& operator-=(const Polynomial& other);
     Polynomial& operator*=(const Polynomial& other);
     Polynomial& operator*=(double scalar);
+
+    Polynomial operator%(size_t mod);
     
     Polynomial operator+(const Polynomial& other) const;
     Polynomial operator-(const Polynomial& other) const;
@@ -74,13 +85,13 @@ class Polynomial
     const Polynomial& f1, int k, const Polynomial& s1,
     const Polynomial& f2, int l, const Polynomial& s2,
     bool positive_infinity = true);
-    
-
-
+    double evaluateUsingFactorialPowers(double x) const;
 
 
     public:
     friend std::ostream& operator<<(std::ostream &os, const Polynomial &p);
+    friend class GF2n;
 };
 
 Polynomial operator*(double scalar, const Polynomial& p);
+#endif // POLYNOMS_H

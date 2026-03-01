@@ -14,13 +14,12 @@ precompute_omega_powers(size_t k_max)
     
     for (size_t k = 1; k <= k_max; ++k)
     {
-        size_t n = 1 << k;           // n = 2^k
-        size_t m = n / 2;             // m = 2^(k-1)
+        size_t n = 1 << k;
+        size_t m = n / 2;
         
-        // Примитивный корень степени n
         double angle = 2.0 * M_PI / n;
         std::complex<double> omega_n(cos(angle), sin(angle));
-        std::complex<double> omega_n_inv = conj(omega_n);  // = 1/omega_n
+        std::complex<double> omega_n_inv = conj(omega_n);
         
         omega_pow[k].resize(m);
         omega_inv[k].resize(m);
@@ -106,7 +105,6 @@ coeffs convolution(
     return result;
 }
 
-// Вспомогательная функция для вывода
 void print_coeffs(const coeffs& c)
 {
     for (auto& x : c)
@@ -114,7 +112,6 @@ void print_coeffs(const coeffs& c)
     std::cout << "\n";
 }
 
-// Функция для сравнения с ожидаемым результатом
 void test_case(const coeffs& result, const coeffs& expected, const std::string& test_name)
 {
     std::cout << test_name << ": ";
@@ -140,10 +137,8 @@ int main()
     size_t k = 3;
     size_t d = 1;
     
-    // Примитивный корень степени 8: ω = e^(2πi/8)
     std::complex<double> omega = std::exp(2.0 * M_PI * std::complex<double>(0, 1) / 8.0);
     
-    // Предвычисление степеней
     auto [omega_pow, omega_inv] = precompute_omega_powers(k);
     
     // ------------------------------------------------------------

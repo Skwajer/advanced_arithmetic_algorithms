@@ -3,7 +3,8 @@
 
 #define MAX_DIGITS 100
 
-void short_division(int u[], int n, int v, int b, int w[], int *r) {
+void short_division(int u[], int n, int v, int b, int w[], int *r) 
+{
     printf("\n=== SHORT DIVISION ALGORITHM DEMONSTRATION (Base b = %d) ===\n\n", b);
     printf("Dividend: ");
     for (int i = n-1; i >= 0; i--) {
@@ -17,7 +18,8 @@ void short_division(int u[], int n, int v, int b, int w[], int *r) {
     
     *r = 0;
     
-    for (int j = n-1; j >= 0; j--) {
+    for (int j = n-1; j >= 0; j--) 
+    {
         int dividend = (*r) * b + u[j];
         
         w[j] = dividend / v;
@@ -33,15 +35,18 @@ void short_division(int u[], int n, int v, int b, int w[], int *r) {
     
     printf("--- Result ---\n");
     printf("Quotient (digits from least to most significant): ");
-    for (int i = n-1; i >= 0; i--) {
+    for (int i = n-1; i >= 0; i--) 
+    {
         printf("%d ", w[i]);
     }
     printf("\nRemainder: %d\n", *r);
 }
 
-void print_number(int digits[], int n, char* name) {
+void print_number(int digits[], int n, char* name) 
+{
     printf("%s: ", name);
-    for (int i = n-1; i >= 0; i--) {
+    for (int i = n-1; i >= 0; i--) 
+    {
         printf("%d", digits[i]);
     }
     printf("\n");

@@ -91,6 +91,17 @@ Polynomial& Polynomial::operator*=(double scalar)
     return *this;
 }
 
+Polynomial Polynomial::operator%(size_t mod)
+{
+    std::vector<double> result(mod, 0.0);
+    for (size_t i = 0; i < coeffs.size(); i++)
+    {
+        result[i % mod] += coeffs[i];
+    }
+    return Polynomial(result);
+}
+
+
 Polynomial Polynomial::operator*(double scalar) const
 {
     Polynomial result = *this;
@@ -384,6 +395,23 @@ double Polynomial::limit_T_at_point(
     Polynomial num = Polynomial::iterated_compose(f1, k, s1);
     Polynomial den = Polynomial::iterated_compose(f2, l, s2);
     return Polynomial::limit_at_infinity(num, den, positive_infinity);
+}
+
+double Polynomial::evaluateUsingFactorialPowers(double x) const
+{
+    size_t n = coeffs.size();
+    
+    if (n == 0) return 0.0;
+    if (n == 1) return coeffs[0];
+    
+    double result = coeffs[n-1];
+    
+    for (int k = n-2; k >= 0; k--) 
+    {
+        result = result * (x - static_cast<double>(k)) + coeffs[k];
+    }
+    
+    return result;
 }
 
 

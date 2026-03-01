@@ -146,5 +146,200 @@ int main()
         std::cout << "Result: " << result << "\n";
         std::cout << "Expected: 0.0\n\n";
     }
+
+    // Тест 1: Простой многочлен в обычном базисе
+    // P(x) = 1 + 2x + 3x^2
+    // В факториальном базисе: x^2 = x(x-1) + x, поэтому
+    // P(x) = 1 + 2x + 3(x(x-1) + x) = 1 + 5x + 3x(x-1)
+    // Коэффициенты: [1, 5, 3] в порядке [a0, a1, a2]
+    {
+        Polynomial p({1.0, 5.0, 3.0});  // already in factorial basis
+        
+        double x = 2.0;
+        double expected = 1.0 + 5.0*2.0 + 3.0*2.0*1.0;  // = 1 + 10 + 6 = 17
+        double result = p.evaluateUsingFactorialPowers(x);
+        
+        std::cout << "Тест 1: P(x) = 1 + 5x + 3x(x-1)\n";
+        std::cout << "x = " << x << "\n";
+        std::cout << "Ожидаемое: " << expected << "\n";
+        std::cout << "Результат: " << result << "\n";
+        std::cout << (std::abs(result - expected) < 1e-10 ? "ПРОЙДЕН" : "НЕ ПРОЙДЕН") << "\n\n";
+    }
+    
+        // Тест 4: Многочлен с отрицательными коэффициентами
+    // P(x) = 2 - 3x + 4x(x-1) - 5x(x-1)(x-2)
+    // Коэффициенты: [2, -3, 4, -5]
+    {
+        Polynomial p({2.0, -3.0, 4.0, -5.0});
+        
+        double x = 3.0;
+        // Вычисляем:
+        // x = 3
+        // x(x-1) = 3*2 = 6
+        // x(x-1)(x-2) = 6*1 = 6
+        // P(3) = 2 + (-3)*3 + 4*6 + (-5)*6 = 2 - 9 + 24 - 30 = -13
+        double expected = -13.0;
+        double result = p.evaluateUsingFactorialPowers(x);
+        
+        std::cout << "Тест 4: P(x) = 2 - 3x + 4x(x-1) - 5x(x-1)(x-2)\n";
+        std::cout << "x = " << x << "\n";
+        std::cout << "Ожидаемое: " << expected << "\n";
+        std::cout << "Результат: " << result << "\n";
+        std::cout << (std::abs(result - expected) < 1e-10 ? "ПРОЙДЕН" : "НЕ ПРОЙДЕН") << "\n\n";
+    }
+
+    // Тест 5: Дробные коэффициенты и дробный x
+    // P(x) = 0.5 + 1.5x + 2.5x(x-1)
+    // Коэффициенты: [0.5, 1.5, 2.5]
+    {
+        Polynomial p({0.5, 1.5, 2.5});
+        
+        double x = 1.5;
+        // Вычисляем:
+        // x = 1.5
+        // x(x-1) = 1.5 * 0.5 = 0.75
+        // P(1.5) = 0.5 + 1.5*1.5 + 2.5*0.75 = 0.5 + 2.25 + 1.875 = 4.625
+        double expected = 4.625;
+        double result = p.evaluateUsingFactorialPowers(x);
+        
+        std::cout << "Тест 5: Дробные коэффициенты\n";
+        std::cout << "P(x) = 0.5 + 1.5x + 2.5x(x-1)\n";
+        std::cout << "x = " << x << "\n";
+        std::cout << "Ожидаемое: " << expected << "\n";
+        std::cout << "Результат: " << result << "\n";
+        std::cout << (std::abs(result - expected) < 1e-10 ? "ПРОЙДЕН" : "НЕ ПРОЙДЕН") << "\n\n";
+    }
+
+    // Тест 6: Многочлен высокой степени
+    // P(x) = 1 + x + x(x-1) + x(x-1)(x-2) + x(x-1)(x-2)(x-3)
+    // Коэффициенты: [1, 1, 1, 1, 1]
+    {
+        Polynomial p({1.0, 1.0, 1.0, 1.0, 1.0});
+        
+        double x = 4.0;
+        // Вычисляем:
+        // x = 4
+        // x(x-1) = 4*3 = 12
+        // x(x-1)(x-2) = 12*2 = 24
+        // x(x-1)(x-2)(x-3) = 24*1 = 24
+        // P(4) = 1 + 4 + 12 + 24 + 24 = 65
+        double expected = 65.0;
+        double result = p.evaluateUsingFactorialPowers(x);
+        
+        std::cout << "Тест 6: Многочлен степени 4\n";
+        std::cout << "P(x) = 1 + x + x(x-1) + x(x-1)(x-2) + x(x-1)(x-2)(x-3)\n";
+        std::cout << "x = " << x << "\n";
+        std::cout << "Ожидаемое: " << expected << "\n";
+        std::cout << "Результат: " << result << "\n";
+        std::cout << (std::abs(result - expected) < 1e-10 ? "ПРОЙДЕН" : "НЕ ПРОЙДЕН") << "\n\n";
+    }
+
+    // Тест 7: Нулевой x
+    // P(x) = 3 + 2x + 4x(x-1)
+    // Коэффициенты: [3, 2, 4]
+    {
+        Polynomial p({3.0, 2.0, 4.0});
+        
+        double x = 0.0;
+        // Вычисляем:
+        // x = 0
+        // x(x-1) = 0 * (-1) = 0
+        // P(0) = 3 + 2*0 + 4*0 = 3
+        double expected = 3.0;
+        double result = p.evaluateUsingFactorialPowers(x);
+        
+        std::cout << "Тест 7: x = 0\n";
+        std::cout << "P(x) = 3 + 2x + 4x(x-1)\n";
+        std::cout << "x = " << x << "\n";
+        std::cout << "Ожидаемое: " << expected << "\n";
+        std::cout << "Результат: " << result << "\n";
+        std::cout << (std::abs(result - expected) < 1e-10 ? "ПРОЙДЕН" : "НЕ ПРОЙДЕН") << "\n\n";
+    }
+
+    // Тест 8: Отрицательный x
+    // P(x) = 1 + 2x + 3x(x-1)
+    // Коэффициенты: [1, 2, 3]
+    {
+        Polynomial p({1.0, 2.0, 3.0});
+        
+        double x = -2.0;
+        // Вычисляем:
+        // x = -2
+        // x(x-1) = (-2) * (-3) = 6
+        // P(-2) = 1 + 2*(-2) + 3*6 = 1 - 4 + 18 = 15
+        double expected = 15.0;
+        double result = p.evaluateUsingFactorialPowers(x);
+        
+        std::cout << "Тест 8: Отрицательный x\n";
+        std::cout << "P(x) = 1 + 2x + 3x(x-1)\n";
+        std::cout << "x = " << x << "\n";
+        std::cout << "Ожидаемое: " << expected << "\n";
+        std::cout << "Результат: " << result << "\n";
+        std::cout << (std::abs(result - expected) < 1e-10 ? "ПРОЙДЕН" : "НЕ ПРОЙДЕН") << "\n\n";
+    }
+
+    // Тест 9: Случай, когда x меньше степени
+    // P(x) = 1 + 2x + 3x(x-1) + 4x(x-1)(x-2)
+    // Коэффициенты: [1, 2, 3, 4]
+    {
+        Polynomial p({1.0, 2.0, 3.0, 4.0});
+        
+        double x = 1.0;
+        // Вычисляем:
+        // x = 1
+        // x(x-1) = 1*0 = 0
+        // x(x-1)(x-2) = 0*(-1) = 0
+        // P(1) = 1 + 2*1 + 3*0 + 4*0 = 3
+        double expected = 3.0;
+        double result = p.evaluateUsingFactorialPowers(x);
+        
+        std::cout << "Тест 9: x меньше степени (x = 1, степень 3)\n";
+        std::cout << "P(x) = 1 + 2x + 3x(x-1) + 4x(x-1)(x-2)\n";
+        std::cout << "x = " << x << "\n";
+        std::cout << "Ожидаемое: " << expected << "\n";
+        std::cout << "Результат: " << result << "\n";
+        std::cout << (std::abs(result - expected) < 1e-10 ? "ПРОЙДЕН" : "НЕ ПРОЙДЕН") << "\n\n";
+    }
+
+    // Тест 10: Константный многочлен
+    // P(x) = 42
+    // Коэффициенты: [42]
+    {
+        Polynomial p({42.0});
+        
+        double x = 5.0;
+        double expected = 42.0;
+        double result = p.evaluateUsingFactorialPowers(x);
+        
+        std::cout << "Тест 10: Константный многочлен\n";
+        std::cout << "P(x) = 42\n";
+        std::cout << "x = " << x << "\n";
+        std::cout << "Ожидаемое: " << expected << "\n";
+        std::cout << "Результат: " << result << "\n";
+        std::cout << (std::abs(result - expected) < 1e-10 ? "ПРОЙДЕН" : "НЕ ПРОЙДЕН") << "\n\n";
+    }
+
+    // Тест 11: Ещё один тест с x равным индексу
+    // P(x) = 1 + x + x(x-1) + x(x-1)(x-2)
+    // Коэффициенты: [1, 1, 1, 1]
+    {
+        Polynomial p({1.0, 1.0, 1.0, 1.0});
+        
+        double x = 2.0;
+        // Вычисляем:
+        // x = 2
+        // x(x-1) = 2*1 = 2
+        // x(x-1)(x-2) = 2*1*0 = 0
+        // P(2) = 1 + 2 + 2 + 0 = 5
+        double expected = 5.0;
+        double result = p.evaluateUsingFactorialPowers(x);
+        
+        std::cout << "Тест 11: x = 2 (равно индексу)\n";
+        std::cout << "P(x) = 1 + x + x(x-1) + x(x-1)(x-2)\n";
+        std::cout << "x = " << x << "\n";
+        std::cout << "Ожидаемое: " << expected << "\n";
+        std::cout << "Результат: " << result << "\n";
+        std::cout << (std::abs(result - expected) < 1e-10 ? "ПРОЙДЕН" : "НЕ ПРОЙДЕН") << "\n";
+    }
     return 0;
 }

@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/Poly_solver.dir/link.d CMakeFiles/Poly_solver.dir/main.cpp.o CMakeFiles/Poly_solver.dir/core/polynoms.cpp.o CMakeFiles/Poly_solver.dir/src/BelongingToLinearShell.cpp.o -o Poly_solver

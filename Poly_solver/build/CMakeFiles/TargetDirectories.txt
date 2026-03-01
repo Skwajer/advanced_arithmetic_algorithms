@@ -1,0 +1,3 @@
+/home/skwajer/dev/advanced_arithmetic_algorithms/Poly_solver/build/CMakeFiles/Poly_solver.dir
+/home/skwajer/dev/advanced_arithmetic_algorithms/Poly_solver/build/CMakeFiles/edit_cache.dir
+/home/skwajer/dev/advanced_arithmetic_algorithms/Poly_solver/build/CMakeFiles/rebuild_cache.dir
