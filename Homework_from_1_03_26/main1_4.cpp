@@ -58,7 +58,6 @@ void simpleIterationDemo(const std::function<double(double)>& phi,
         x = x_next;
         iter++;
         
-        // Защита от бесконечного цикла
         if (iter > max_iters) {
             std::cout << std::string(50, '-') << "\n";
             std::cout << "НЕ СОШЛОСЬ за " << max_iters << " итераций\n";
@@ -68,19 +67,14 @@ void simpleIterationDemo(const std::function<double(double)>& phi,
     } while (true);
 }
 
-// ============================================================
-// ФУНКЦИЯ (a): φ(x) = c + a·sin²x + b·cos²x
-// ============================================================
 double phiA(double x, double a, double b, double c) {
     return c + a * sin(x) * sin(x) + b * cos(x) * cos(x);
 }
 
-// Производная для функции (a)
 double phiADerivative(double x, double a, double b) {
     return (a - b) * sin(2 * x);
 }
 
-// Демонстрация для функции (a)
 void demonstrateFunctionA() {
     std::cout << "\n\n";
     std::cout << "============================================================\n";
@@ -88,7 +82,7 @@ void demonstrateFunctionA() {
     std::cout << "УСЛОВИЕ СХОДИМОСТИ: |a - b| < 1\n";
     std::cout << "============================================================\n";
     
-    // Тест 1: Сходящийся случай (|a-b| < 1)
+    
     {
         double a = 0.3, b = 0.8, c = 1.0;
         double max_deriv = std::abs(a - b);
@@ -99,13 +93,11 @@ void demonstrateFunctionA() {
         
         auto phi = [a, b, c](double x) { return phiA(x, a, b, c); };
         
-        // Проверим несколько начальных приближений
         simpleIterationDemo(phi, 0.0, 1e-8, 50, desc);
         simpleIterationDemo(phi, 2.0, 1e-8, 50, desc + " (x0=2)");
         simpleIterationDemo(phi, -1.5, 1e-8, 50, desc + " (x0=-1.5)");
     }
     
-    // Тест 2: Граничный случай (|a-b| = 1)
     {
         double a = 2.0, b = 1.0, c = 0.0;
         double max_deriv = std::abs(a - b);
@@ -119,7 +111,6 @@ void demonstrateFunctionA() {
         simpleIterationDemo(phi, 1.0, 1e-8, 50, desc);
     }
     
-    // Тест 3: Расходящийся случай (|a-b| > 1)
     {
         double a = 3.0, b = 1.0, c = 0.0;
         double max_deriv = std::abs(a - b);
@@ -130,29 +121,24 @@ void demonstrateFunctionA() {
         
         auto phi = [a, b, c](double x) { return phiA(x, a, b, c); };
         
-        simpleIterationDemo(phi, 1.0, 1e-8, 20, desc); // мало итераций, чтобы не зависло
+        simpleIterationDemo(phi, 1.0, 1e-8, 20, desc);
     }
 }
 
-// ============================================================
-// ФУНКЦИЯ (b): φ(x) = c + a·e^{-b·x²}
-// ============================================================
+
 double phiB(double x, double a, double b, double c) {
     return c + a * exp(-b * x * x);
 }
 
-// Производная для функции (b)
 double phiBDerivative(double x, double a, double b) {
     return -2 * a * b * x * exp(-b * x * x);
 }
 
-// Максимальное значение |φ'| для функции (b)
 double maxPhiBDerivative(double a, double b) {
-    if (b <= 0) return 1e10; // бесконечность
+    if (b <= 0) return 1e10;
     return std::abs(a) * sqrt(2 * b / M_E);
 }
 
-// Демонстрация для функции (b)
 void demonstrateFunctionB() {
     std::cout << "\n\n";
     std::cout << "============================================================\n";
@@ -160,7 +146,6 @@ void demonstrateFunctionB() {
     std::cout << "УСЛОВИЕ СХОДИМОСТИ: b > 0 И |a| < √(e/(2b))\n";
     std::cout << "============================================================\n";
     
-    // Тест 1: Сходящийся случай (b > 0 и |a| достаточно мал)
     {
         double a = 1.0, b = 2.0, c = 0.0;
         double limit = sqrt(M_E / (2 * b));
@@ -177,7 +162,6 @@ void demonstrateFunctionB() {
         simpleIterationDemo(phi, 2.0, 1e-8, 50, desc + " (x0=2)");
     }
     
-    // Тест 2: Сходящийся случай, другие параметры
     {
         double a = 0.5, b = 1.0, c = 1.0;
         double limit = sqrt(M_E / (2 * b));
@@ -193,10 +177,9 @@ void demonstrateFunctionB() {
         simpleIterationDemo(phi, -1.0, 1e-8, 50, desc);
     }
     
-    // Тест 3: Граничный случай (|a| = √(e/(2b)))
     {
         double b = 1.0;
-        double a = sqrt(M_E / (2 * b)); // примерно 1.165
+        double a = sqrt(M_E / (2 * b));
         double c = 0.0;
         double max_deriv = maxPhiBDerivative(a, b);
         
@@ -209,7 +192,6 @@ void demonstrateFunctionB() {
         simpleIterationDemo(phi, 1.0, 1e-8, 30, desc);
     }
     
-    // Тест 4: Расходящийся случай (|a| > √(e/(2b)))
     {
         double b = 1.0;
         double a = 2.0; // > 1.165
@@ -224,10 +206,9 @@ void demonstrateFunctionB() {
         
         auto phi = [a, b, c](double x) { return phiB(x, a, b, c); };
         
-        simpleIterationDemo(phi, 0.5, 1e-8, 15, desc); // мало итераций
+        simpleIterationDemo(phi, 0.5, 1e-8, 15, desc);
     }
     
-    // Тест 5: b < 0 (заведомо расходится)
     {
         double a = 1.0, b = -0.5, c = 0.0;
         
@@ -239,9 +220,7 @@ void demonstrateFunctionB() {
     }
 }
 
-// ============================================================
-// ГЛАВНАЯ ФУНКЦИЯ
-// ============================================================
+
 int main() {
     std::cout << std::setprecision(8);
     

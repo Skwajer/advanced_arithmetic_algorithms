@@ -18,28 +18,23 @@ int main()
         std::cout << "root 3 (≈-0.65): " << root3 << "\n\n";
         
         std::cout << "=== Part (b): x^4 - x^3 = 0 ===\n";
-        auto eq2 = [](double x) { return x*x*x*x - x*x*x; };  // x^4 - x^3
+        auto eq2 = [](double x) { return x*x*x*x - x*x*x; };
         
-        // root x = 0 (кратный)
-        double root4 = simpleIteration(0.5, eq2);  // Должно сойтись к 0
+        double root4 = simpleIteration(0.5, eq2);
         std::cout << "root x=0: " << root4 << "\n\n";
         
-        // root x = 1
         double root5 = simpleIteration(1.5, eq2);
         std::cout << "root x=1: " << root5 << "\n\n";
         
         std::cout << "=== Part (c): x^2 - 3x + 2 = 0 ===\n";
         auto eq3 = [](double x) { return x*x - 3*x + 2; };
         
-        // root x = 1
         double root6 = simpleIteration(0.5, eq3);
         std::cout << "root x=1: " << root6 << "\n\n";
         
-        // root x = 2
         double root7 = simpleIteration(2.5, eq3);
         std::cout << "root x=2: " << root7 << "\n\n";
 
-        //=== RESULTS ===
         std::cout << "RESULTS" << std::endl;
         std::cout << "=== Part (a): x^3 + 3x^2 - 1 = 0 ===\n";
         std::cout << "root 1 (≈0.53): " << root1 << "\n\n";
@@ -48,18 +43,14 @@ int main()
 
         std::cout << "=== Part (b): x^4 - x^3 = 0 ===\n";
         
-        // root x = 0 (кратный)
         std::cout << "root x=0: " << root4 << "\n\n";
         
-        // root x = 1
         std::cout << "root x=1: " << root5 << "\n\n";
 
         std::cout << "=== Part (c): x^2 - 3x + 2 = 0 ===\n";
         
-        // root x = 1
         std::cout << "root x=1: " << root6 << "\n\n";
         
-        // root x = 2
         std::cout << "root x=2: " << root7 << "\n\n";
         
 

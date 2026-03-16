@@ -200,11 +200,9 @@ void solveSystemC() {
             cout << "x3 = " << setprecision(10) << solution[2] << "\n";
             cout << "λ = x4 = " << setprecision(10) << solution[3] << "\n";
             
-            // Норма вектора
             double norm = sqrt(solution[0]*solution[0] + solution[1]*solution[1] + solution[2]*solution[2]);
             cout << "Норма вектора (должна быть 1): " << norm << "\n";
             
-            // Проверка
             vector<double> check = F(solution);
             cout << "\nНевязки:\n";
             for (size_t j = 0; j < check.size(); j++) {
