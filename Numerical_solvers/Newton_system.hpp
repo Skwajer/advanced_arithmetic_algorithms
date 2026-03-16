@@ -90,6 +90,62 @@ static std::optional<std::vector<double>> gaussianElimination(
     return x;
 }
 
+static std::vector<std::vector<double>> inverseMatrix(const std::vector<std::vector<double>>& A) {
+    int n = A.size();
+    
+    if (n == 0 || A[0].size() != n) {
+        throw std::invalid_argument("Матрица должна быть квадратной");
+    }
+    
+    std::vector<std::vector<double>> augmented(n, std::vector<double>(2 * n));
+    
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            augmented[i][j] = A[i][j];
+            augmented[i][j + n] = (i == j) ? 1.0 : 0.0;
+        }
+    }
+    
+    for (int i = 0; i < n; i++) {
+        int maxRow = i;
+        for (int k = i + 1; k < n; k++) {
+            if (fabs(augmented[k][i]) > fabs(augmented[maxRow][i])) {
+                maxRow = k;
+            }
+        }
+        
+        if (fabs(augmented[maxRow][i]) < 1e-10) {
+            throw std::invalid_argument("Матрица вырожденная, обратной не существует");
+        }
+        
+        swap(augmented[i], augmented[maxRow]);
+        
+        double pivot = augmented[i][i];
+        for (int j = 0; j < 2 * n; j++) {
+            augmented[i][j] /= pivot;
+        }
+        
+        for (int k = 0; k < n; k++) {
+            if (k != i) {
+                double factor = augmented[k][i];
+                for (int j = 0; j < 2 * n; j++) {
+                    augmented[k][j] -= factor * augmented[i][j];
+                }
+            }
+        }
+    }
+    
+    std::vector<std::vector<double>> inverse(n, std::vector<double>(n));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            inverse[i][j] = augmented[i][j + n];
+        }
+    }
+    
+    return inverse;
+}
+
+
 struct SystemResult {
     std::vector<double> solution;
     size_t iterations;
@@ -175,5 +231,95 @@ static std::vector<double> NewtonSystem(
     } while (iter < max_iters);
     
     throw std::runtime_error("Newton method did not converge within " + std::to_string(max_iters) + " iterations");
+}
+
+static double normInf(const std::vector<double>& x, const std::vector<double>& y) {
+    double max_diff = 0.0;
+    for (size_t i = 0; i < x.size(); i++) {
+        double diff = fabs(x[i] - y[i]);
+        if (diff > max_diff) {
+            max_diff = diff;
+        }
+    }
+    return max_diff;
+}
+
+// Метод Ньютона с обратной матрицей Якоби
+static std::vector<double> NewtonSystem(
+    const std::function<std::vector<double>(const std::vector<double>&)>& F,
+    const std::function<std::vector<std::vector<double>>(const std::vector<double>&)>& J,
+    const std::vector<double>& x0,
+    int n_accuracy = 10,  // n для критерия остановки: 10^(-n)
+    size_t max_iters = 1000,
+    bool verbose = true
+)
+{
+    std::vector<double> x = x0;
+    std::vector<double> x_prev = x0;
+    size_t dim = x0.size();
+    
+    double tolerance = pow(10.0, -n_accuracy);
+    
+    if (verbose) {
+        std::cout << "Метод Ньютона для системы нелинейных уравнений\n";
+        std::cout << "Критерий остановки: ||X^k - X^{k-1}||_∞ < 10^(-" << n_accuracy << ") = " << tolerance << "\n";
+        std::cout << "Начальное приближение: ";
+        for (size_t i = 0; i < dim; i++) {
+            std::cout << "x" << i+1 << " = " << x[i] << " ";
+        }
+        std::cout << "\n\n";
+        std::cout << std::setw(5) << "iter" << std::setw(15) << "||Δx||_∞" << std::setw(15) << "||F(x)||";
+        for (size_t i = 0; i < dim; i++) {
+            std::cout << std::setw(15) << "x" << i+1;
+        }
+        std::cout << "\n";
+    }
+    
+    for (size_t iter = 0; iter < max_iters; iter++) {
+        std::vector<double> Fx = F(x);
+        
+        double F_norm = 0.0;
+        for (size_t i = 0; i < dim; i++) {
+            F_norm += Fx[i] * Fx[i];
+        }
+        F_norm = sqrt(F_norm);
+        
+        std::vector<std::vector<double>> Jx = J(x);
+        std::vector<std::vector<double>> J_inv = inverseMatrix(Jx);
+        
+        std::vector<double> dx(dim, 0.0);
+        for (size_t i = 0; i < dim; i++) {
+            for (size_t j = 0; j < dim; j++) {
+                dx[i] -= J_inv[i][j] * Fx[j];
+            }
+        }
+        
+        x_prev = x;
+        for (size_t i = 0; i < dim; i++) {
+            x[i] += dx[i];
+        }
+        
+        double diff_norm = normInf(x, x_prev);
+        
+        if (verbose) {
+            std::cout << std::setw(5) << iter 
+                 << std::setw(15) << std::scientific << std::setprecision(5) << diff_norm
+                 << std::setw(15) << std::scientific << std::setprecision(5) << F_norm;
+            for (size_t i = 0; i < dim; i++) {
+                std::cout << std::setw(15) << std::fixed << std::setprecision(8) << x[i];
+            }
+            std::cout << "\n";
+        }
+        
+        if (diff_norm < tolerance) 
+        {
+            if (verbose) {
+                std::cout << "\nРешение найдено за " << iter + 1 << " итераций\n";
+            }
+            return x;
+        }
+    }
+    
+    throw std::runtime_error("Newtons method does not converge within max_iters");
 }
 
