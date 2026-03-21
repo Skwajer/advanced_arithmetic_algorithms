@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -160,17 +161,122 @@ public:
 
     PolyTrie &operator+=(PolyTrie const &other)
     {
+        std::function<void(TrieNode*, const TrieNode*, 
+                       std::vector<int>&, size_t)> dfs_add = 
+            [&](TrieNode* node1, const TrieNode* node2, 
+                std::vector<int>& degrees, size_t depth)
+            {
+                if (depth == m_var_names.size())
+                {
+                    if (node1->coeff.has_value() && node2->coeff.has_value())
+                    {
+                        node1->coeff = node1->coeff.value() + node2->coeff.value();
+                    }
+                    else if(!(node1->coeff.has_value()) && node2->coeff.has_value())
+                    {
+                        node1->coeff = node2->coeff.value();
+                    }
+                    return;
+                }
+
+                std::set<int> all_degrees;
+                for (auto const &[deg, child] : node1->childs) all_degrees.insert(deg);
+                for (auto const &[deg, child] : node2->childs) all_degrees.insert(deg);
+
+                for( auto deg : all_degrees)
+                {
+                    degrees[depth] = deg;
+                    auto it1 = node1->childs.find(deg);
+                    auto it2 = node2->childs.find(deg);
+                    if (it1 == node1->childs.end())
+                    {
+                        node1->childs[deg] = std::make_unique<TrieNode>();
+                        it1 = node1->childs.find(deg);
+                    }
+
+                    TrieNode *child2 = nullptr;
+                    if (it2 != node2->childs.end())
+                    {
+                        child2 = it2->second.get();
+                    }
+
+                    dfs_add(it1->second.get(), child2, degrees, depth + 1);
+                }
+            };
+
+        std::vector<int> degrees(m_var_names.size(), 0);
+        dfs_add(m_root.get(), other.m_root.get(), degrees, 0);
 
         return *this;
+    }
+
+    PolyTrie operator+(PolyTrie const &other)
+    {
+        PolyTrie obj = *this;
+        return obj += other;
     }
 
     PolyTrie &operator-=(PolyTrie const &other)
     {
+        std::function<void(TrieNode*, const TrieNode*, 
+                       std::vector<int>&, size_t)> dfs_add = 
+            [&](TrieNode* node1, const TrieNode* node2, 
+                std::vector<int>& degrees, size_t depth)
+            {
+                if (depth == m_var_names.size())
+                {
+                    if (node1->coeff.has_value() && node2->coeff.has_value())
+                    {
+                        node1->coeff = node1->coeff.value() - node2->coeff.value();
+                    }
+                    else if(!(node1->coeff.has_value()) && node2->coeff.has_value())
+                    {
+                        node1->coeff = node2->coeff.value();
+                    }
+                    return;
+                }
+
+                std::set<int> all_degrees;
+                for (auto const &[deg, child] : node1->childs) all_degrees.insert(deg);
+                for (auto const &[deg, child] : node2->childs) all_degrees.insert(deg);
+
+                for( auto deg : all_degrees)
+                {
+                    degrees[depth] = deg;
+                    auto it1 = node1->childs.find(deg);
+                    auto it2 = node2->childs.find(deg);
+                    if (it1 == node1->childs.end())
+                    {
+                        node1->childs[deg] = std::make_unique<TrieNode>();
+                        it1 = node1->childs.find(deg);
+                    }
+
+                    TrieNode *child2 = nullptr;
+                    if (it2 != node2->childs.end())
+                    {
+                        child2 = it2->second.get();
+                    }
+
+                    dfs_add(it1->second.get(), child2, degrees, depth + 1);
+                }
+            };
+
+        std::vector<int> degrees(m_var_names.size(), 0);
+        dfs_add(m_root.get(), other.m_root.get(), degrees, 0);
 
         return *this;
     }
+
+    PolyTrie operator-(PolyTrie const &other)
+    {
+        PolyTrie obj = *this;
+        return obj -= other;
+    }
+
     PolyTrie &operator*=(PolyTrie const &other)
     {
+        
+
         return *this;
     }
 };
