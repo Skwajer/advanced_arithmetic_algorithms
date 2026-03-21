@@ -1,14 +1,15 @@
-#include <exception>
+#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
+#include <utility>
 #include <vector>
 #include <map>
 #include <functional>
+#include <cmath>
 
 template<typename coeffType>
 class PolyTrie
@@ -16,7 +17,7 @@ class PolyTrie
 private:
     struct TrieNode 
     {
-        std::unordered_map<int, std::unique_ptr<TrieNode>> childs;
+        std::map<int, std::unique_ptr<TrieNode>> childs;
         std::optional<coeffType> coeff;
     };
 
@@ -100,6 +101,7 @@ public:
         return supp;
     }
 
+public:
     void print() const
     {
         auto supp = get_supp();
@@ -146,7 +148,7 @@ public:
                     {
                         std::cout << '^' << degrees[i];
                     }
-                    if (i != m_var_names.size() - 1) std::cout << " * ";
+                    if (i < m_var_names.size() - 1) {std::cout << " * ";};
 
                 }
             }
@@ -159,6 +161,9 @@ public:
         std::cout << std::endl;
     }
 
+
+    // arithmetic operations
+public:
     PolyTrie &operator+=(PolyTrie const &other)
     {
         std::function<void(TrieNode*, const TrieNode*, 
@@ -210,7 +215,7 @@ public:
         return *this;
     }
 
-    PolyTrie operator+(PolyTrie const &other)
+    PolyTrie operator+(PolyTrie const &other) const
     {
         PolyTrie obj = *this;
         return obj += other;
@@ -267,7 +272,7 @@ public:
         return *this;
     }
 
-    PolyTrie operator-(PolyTrie const &other)
+    PolyTrie operator-(PolyTrie const &other) const
     {
         PolyTrie obj = *this;
         return obj -= other;
@@ -275,8 +280,162 @@ public:
 
     PolyTrie &operator*=(PolyTrie const &other)
     {
-        
-
+        PolyTrie result(m_var_names);
+        auto terms1 = get_supp();
+        auto terms2 = other.get_supp();
+        for (auto const &[deg1, coeff1] : terms1)
+        {
+            for(auto const &[deg2, coeff2] : terms2)
+            {
+                std::vector<int> new_degs(m_var_names.size());
+                for (auto i = 0; i < m_var_names.size(); i++)
+                {
+                    new_degs[i] = deg1[i] + deg2[i];
+                }
+                result.add_term(new_degs, coeff1 * coeff2);
+            }
+        }
+        *this = std::move(result);
         return *this;
+    }
+
+PolyTrie operator*(PolyTrie const &other) const
+    {
+        PolyTrie obj = *this;
+        return obj *= other;
+    }
+
+
+    // equality operations
+
+private:
+    int lex_order_compare(std::vector<int> const &term1_degs, std::vector<int> const &term2_degs) const
+    {
+        for (auto i = 0; i < m_var_names.size(); i++)
+        {
+            if (term1_degs[i] > term2_degs[i]){return 1;}
+
+            else if (term1_degs[i] < term2_degs[i]) {return -1;}
+        }
+        return 0;
+    }
+
+public:
+    bool operator==(PolyTrie const &other) const
+    {
+        auto terms1 = get_supp();
+        auto terms2 = other.get_supp();
+
+        if (terms1.size() != terms2.size()) {return false;}
+
+        for (auto const &[degs, coeff] : terms1)
+        {
+            auto it2 = terms2.find(degs);
+            if (it2 == terms2.end()) {return false;}
+            if (coeff != it2.value()) {return false;}
+        }
+        return true;
+    }
+
+    bool operator!=(PolyTrie const &other)
+    {
+        return !(*this == other);
+    }
+
+
+public:
+    /*coeffType evaluate(std::vector<coeffType> const &point) const
+    {
+        std::function<coeffType(const TrieNode*, size_t )> eval_node = 
+        [&](const TrieNode *node, size_t depth)
+        {
+            if (depth == m_var_names.size())
+            {
+                return (node->coeff.has_value() ? node->coeff.value() : coeffType(0));
+            }
+
+            coeffType x_i = point[depth];
+            coeffType result = coeffType(0);
+            for (auto rev_it = node->childs.rbegin(); rev_it != node->childs.rend(); rev_it++)
+            {
+                coeffType node_value = eval_node(rev_it->second.get(), depth + 1);
+                result = result * x_i + node_value;
+            }
+            return result;
+        };
+        return eval_node(m_root.get(), 0);
+    }*/
+
+    coeffType evaluate(std::vector<coeffType> const &point) const
+    {
+        if (point.size() != m_var_names.size())
+        {
+            throw std::invalid_argument("Размерность точки не совпадает с числом переменных");
+        }
+        
+        coeffType result = coeffType(0);
+        auto terms = get_supp();
+        
+        for (auto const &[degrees, coeff] : terms)
+        {
+            coeffType term_value = coeff;
+            for (size_t i = 0; i < m_var_names.size(); ++i)
+            {
+                if (degrees[i] != 0)
+                {
+                    term_value *= std::pow(point[i], degrees[i]);
+                }
+            }
+            result += term_value;
+        }
+        return result;
+    }
+
+    int deg_of_uniformity() const
+    {
+        auto terms = get_supp();
+        if (terms.empty())
+        {
+            return 0;
+        }
+
+        std::optional<int> max_deg;
+        for (auto const &[degs, coeff] : terms)
+        {
+            int curent_total_deg = 0;
+            for (auto deg : degs)
+            {
+                curent_total_deg += deg;
+            }
+            
+            if (!max_deg.has_value()) 
+            {
+                max_deg = curent_total_deg;
+            }
+            else if (max_deg != curent_total_deg) 
+            {
+                return {};
+            }
+        }
+        return max_deg.value();
+    }
+
+    PolyTrie homogeneous_part(int d) const
+    {
+        PolyTrie h(m_var_names);
+        auto terms = get_supp();
+        for (auto const &[degs, coeff] : terms)
+        {
+            int curent_f_term_deg = 0;
+            for (auto deg : degs)
+            {
+                curent_f_term_deg += deg;
+            }
+            if (d == curent_f_term_deg)
+            {
+                h.add_term(degs, coeff);
+            }
+        }
+        return h;
     }
 };
