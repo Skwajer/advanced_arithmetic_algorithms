@@ -4,77 +4,115 @@
 
 using complex = std::complex<double>;
 
-int main()
+#include <complex>
+#include <vector>
+
+using complex = std::complex<double>;
+
+void print_supp(const std::map<std::vector<int>, double>& supp, const std::vector<std::string>& var_names) {
+    if (supp.empty()) {
+        std::cout << "  (empty)";
+        return;
+    }
+    
+    bool first = true;
+    for (const auto& [degrees, coeff] : supp) {
+        if (!first) std::cout << " + ";
+        first = false;
+        
+        std::cout << coeff;
+        for (size_t i = 0; i < degrees.size(); ++i) {
+            if (degrees[i] != 0) {
+                std::cout << var_names[i];
+                if (degrees[i] != 1) {
+                    std::cout << "^" << degrees[i];
+                }
+            }
+        }
+    }
+}
+
+void test_get_supp() 
 {
-    PolyTrie<double> f1_R3({"alpha", "betta", "gamma"});
-    f1_R3.add_term({2, 3, 7}, -3.5);
-    f1_R3.add_term({1, 4, -4}, 5);
-    f1_R3.add_term({0, 0, 0}, -11.3);
-
-    PolyTrie<double> f2_R3({"alpha", "betta", "gamma"});
-    f2_R3.add_term({2, 3, 7}, -3.5);
-    f2_R3.add_term({1, 4, -4}, 5);
-    f2_R3.add_term({0, 0, 0}, -11.3);
-    f2_R3.add_term({3, 3, 3}, -25.0);
-
-    f1_R3 += f2_R3;
-
-    f1_R3.print();
-    std::vector<double> point_R3 = {5, 7, 2};
-    std::cout << "value of f1_R3 in point{5, 7, 2} = " << f1_R3.evaluate(point_R3) << std::endl;
-
-    PolyTrie<double> P({"x", "y"});
+    std::cout << "Testing get_supp..." << std::endl;
     
-    // P(x,y) = 3*x^2*y + 2*x*y^2 - 5*x + 4*y - 7
-    P.add_term({2, 1}, 3.0);  
-    P.add_term({1, 2}, 2.0);
-    P.add_term({1, 0}, -5.0); 
-    P.add_term({0, 1}, 4.0);  
-    P.add_term({0, 0}, -7.0);  
-    
-    std::cout << "P(x,y) = ";
-    P.print();
+    // Test 1: Empty polynomial
+    PolyTrie<double> p1({"x", "y"});
+    auto supp1 = p1.get_supp();
+    std::cout << "  Empty polynomial: " << (supp1.empty() ? "✓" : "✗");
+    std::cout << " -> ";
+    print_supp(supp1, {"x", "y"});
     std::cout << std::endl;
     
-    // Тест 1: точка (x=1, y=1)
-    // 3*1^2*1 + 2*1*1^2 - 5*1 + 4*1 - 7 = 3 + 2 - 5 + 4 - 7 = -3
-    std::vector<double> point1 = {1.0, 1.0};
-    double val1 = P.evaluate(point1);
-    std::cout << "P(1, 1) = " << val1 << " (expected: -3)" << std::endl;
-    
-    // Тест 2: точка (x=2, y=3)
-    // 3*4*3 + 2*2*9 - 5*2 + 4*3 - 7 = 36 + 36 - 10 + 12 - 7 = 67
-    std::vector<double> point2 = {2.0, 3.0};
-    double val2 = P.evaluate(point2);
-    std::cout << "P(2, 3) = " << val2 << " (expected: 67)" << std::endl;
-    
-    // Тест 3: точка (x=0, y=0)
-    // -7
-    std::vector<double> point3 = {0.0, 0.0};
-    double val3 = P.evaluate(point3);
-    std::cout << "P(0, 0) = " << val3 << " (expected: -7)" << std::endl;
-    
-    // Тест 4: точка (x=0, y=5)
-    // 4*5 - 7 = 20 - 7 = 13
-    std::vector<double> point4 = {0.0, 5.0};
-    double val4 = P.evaluate(point4);
-    std::cout << "P(0, 5) = " << val4 << " (expected: 13)" << std::endl;
-    
-    // Тест 5: точка (x=3, y=0)
-    // -5*3 - 7 = -15 - 7 = -22
-    std::vector<double> point5 = {3.0, 0.0};
-    double val5 = P.evaluate(point5);
-    std::cout << "P(3, 0) = " << val5 << " (expected: -22)" << std::endl;
-    
+    // Test 2: Single term
+    PolyTrie<double> p2({"x", "y"});
+    p2.add_term({2, 1}, 3.5);
+    auto supp2 = p2.get_supp();
+    bool test2 = (supp2.size() == 1 && supp2.begin()->first == std::vector<int>{2, 1} && supp2.begin()->second == 3.5);
+    std::cout << "  Single term: " << (test2 ? "✓" : "✗");
+    std::cout << " -> ";
+    print_supp(supp2, {"x", "y"});
     std::cout << std::endl;
+    
+    // Test 3: Multiple terms
+    PolyTrie<double> p3({"x", "y"});
+    p3.add_term({2, 0}, 3.0);
+    p3.add_term({0, 3}, 4.0);
+    p3.add_term({1, 1}, 2.0);
+    auto supp3 = p3.get_supp();
+    bool test3 = (supp3.size() == 3 && 
+                  supp3[{2,0}] == 3.0 && 
+                  supp3[{0,3}] == 4.0 && 
+                  supp3[{1,1}] == 2.0);
+    std::cout << "  Multiple terms: " << (test3 ? "✓" : "✗");
+    std::cout << " -> ";
+    print_supp(supp3, {"x", "y"});
+    std::cout << std::endl;
+    
+    // Test 4: Zero coefficients are ignored
+    PolyTrie<double> p4({"x", "y"});
+    p4.add_term({2, 0}, 3.0);
+    p4.add_term({1, 1}, 0.0);
+    p4.add_term({0, 2}, 5.0);
+    auto supp4 = p4.get_supp();
+    bool test4 = (supp4.size() == 2 && 
+                  supp4.find({1,1}) == supp4.end());
+    std::cout << "  Zero coefficients ignored: " << (test4 ? "✓" : "✗");
+    std::cout << " -> ";
+    print_supp(supp4, {"x", "y"});
+    std::cout << std::endl;
+    
+    // Test 5: Negative coefficients
+    PolyTrie<double> p5({"x", "y"});
+    p5.add_term({2, 0}, -3.0);
+    p5.add_term({0, 1}, -5.0);
+    auto supp5 = p5.get_supp();
+    bool test5 = (supp5.size() == 2 && 
+                  supp5[{2,0}] == -3.0 && 
+                  supp5[{0,1}] == -5.0);
+    std::cout << "  Negative coefficients: " << (test5 ? "✓" : "✗");
+    std::cout << " -> ";
+    print_supp(supp5, {"x", "y"});
+    std::cout << std::endl;
+    
+    // Test 6: Large degrees
+    PolyTrie<double> p6({"x", "y"});
+    p6.add_term({10, 5}, 2.5);
+    p6.add_term({0, 20}, 1.5);
+    auto supp6 = p6.get_supp();
+    bool test6 = (supp6.size() == 2 && 
+                  supp6[{10,5}] == 2.5 && 
+                  supp6[{0,20}] == 1.5);
+    std::cout << "  Large degrees: " << (test6 ? "✓" : "✗");
+    std::cout << " -> ";
+    print_supp(supp6, {"x", "y"});
+    std::cout << std::endl;
+    
+    std::cout << "Test complete!" << std::endl;
+}
 
-    PolyTrie<double> f3_R3({"x", "y", "z"});
-    f1_R3.add_term({2, 3, 7}, -3.5);
-    f1_R3.add_term({2, 5, 7}, -3.5);
-    f1_R3.add_term({2, 6, 2}, -3.5);
-    f1_R3.add_term({1, 3, 6}, 10.5);
-    PolyTrie<double> H = f1_R3.homogeneous_part(10);
-    H.print();
-
+int main() 
+{
+    test_get_supp();
     return 0;
 }

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <memory>
@@ -10,6 +11,67 @@
 #include <map>
 #include <functional>
 #include <cmath>
+
+namespace order 
+{
+    struct Lex
+    {
+        bool operator()(const std::vector<int>& a,
+                        const std::vector<int>& b) const
+        {
+            for (size_t i = 0; i < a.size(); i++)
+            {
+                if (a[i] != b[i])
+                    return a[i] < b[i];
+            }
+            return false;
+        }
+    };
+
+    struct GrLex
+    {
+        bool operator()(const std::vector<int>& a,
+                        const std::vector<int>& b) const
+        {
+            int sum_deg_a = 0, sum_deg_b = 0;
+
+            for (int x : a) sum_deg_a += x;
+            for (int x : b) sum_deg_b += x;
+
+            if (sum_deg_a != sum_deg_b)
+                return sum_deg_a < sum_deg_b;
+
+            for (size_t i = 0; i < a.size(); i++)
+            {
+                if (a[i] != b[i])
+                    return a[i] < b[i];
+            }
+            return false;
+        }
+    };
+
+    struct GrevLex
+    {
+        bool operator()(const std::vector<int>& a,
+                        const std::vector<int>& b) const
+        {
+            int deg_a = 0, deg_b = 0;
+
+            for (int x : a) deg_a += x;
+            for (int x : b) deg_b += x;
+
+            if (deg_a != deg_b)
+                return deg_a < deg_b;
+
+            for (int i = (int)a.size() - 1; i >= 0; i--)
+            {
+                if (a[i] != b[i])
+                    return a[i] > b[i];
+            }
+            return false;
+        }
+    };
+}
 
 template<typename coeffType>
 class PolyTrie
@@ -24,6 +86,40 @@ private:
 private:
     std::unique_ptr<TrieNode> m_root;
     std::vector<std::string> m_var_names;
+
+public:
+    PolyTrie(const PolyTrie& other)
+    {
+        m_var_names = other.m_var_names;
+        m_root = clone(other.m_root.get());
+    }
+
+    PolyTrie& operator=(const PolyTrie& other)
+    {
+        if (this != &other)
+        {
+            m_var_names = other.m_var_names;
+            m_root = clone(other.m_root.get());
+        }
+        return *this;
+    }
+
+    std::unique_ptr<TrieNode> clone(const TrieNode* node)
+    {
+        if (!node) return nullptr;
+
+        auto new_node = std::make_unique<TrieNode>();
+
+        if (node->coeff.has_value())
+            new_node->coeff = node->coeff;
+
+        for (const auto& [deg, child] : node->childs)
+        {
+            new_node->childs[deg] = clone(child.get());
+        }
+
+        return new_node;
+    }
 
 public:
     PolyTrie(std::vector<std::string> const &init_var_names)
@@ -165,55 +261,71 @@ public:
     // arithmetic operations
 public:
     PolyTrie &operator+=(PolyTrie const &other)
+{
+    std::function<void(TrieNode*, const TrieNode*, size_t)> dfs_add =
+        [&](TrieNode* node1, const TrieNode* node2, size_t depth)
     {
-        std::function<void(TrieNode*, const TrieNode*, 
-                       std::vector<int>&, size_t)> dfs_add = 
-            [&](TrieNode* node1, const TrieNode* node2, 
-                std::vector<int>& degrees, size_t depth)
+        if (node2 == nullptr)
+            return;
+
+        if (depth == m_var_names.size())
+        {
+            if (node2->coeff.has_value())
             {
-                if (depth == m_var_names.size())
+                if (node1->coeff.has_value())
                 {
-                    if (node1->coeff.has_value() && node2->coeff.has_value())
-                    {
-                        node1->coeff = node1->coeff.value() + node2->coeff.value();
-                    }
-                    else if(!(node1->coeff.has_value()) && node2->coeff.has_value())
-                    {
-                        node1->coeff = node2->coeff.value();
-                    }
-                    return;
+                    node1->coeff = node1->coeff.value() + node2->coeff.value();
+                }
+                else
+                {
+                    node1->coeff = node2->coeff.value();
                 }
 
-                std::set<int> all_degrees;
-                for (auto const &[deg, child] : node1->childs) all_degrees.insert(deg);
-                for (auto const &[deg, child] : node2->childs) all_degrees.insert(deg);
-
-                for( auto deg : all_degrees)
+                if (node1->coeff.value() == coeffType(0))
                 {
-                    degrees[depth] = deg;
-                    auto it1 = node1->childs.find(deg);
-                    auto it2 = node2->childs.find(deg);
-                    if (it1 == node1->childs.end())
-                    {
-                        node1->childs[deg] = std::make_unique<TrieNode>();
-                        it1 = node1->childs.find(deg);
-                    }
-
-                    TrieNode *child2 = nullptr;
-                    if (it2 != node2->childs.end())
-                    {
-                        child2 = it2->second.get();
-                    }
-
-                    dfs_add(it1->second.get(), child2, degrees, depth + 1);
+                    node1->coeff.reset();
                 }
-            };
+            }
+            return;
+        }
 
-        std::vector<int> degrees(m_var_names.size(), 0);
-        dfs_add(m_root.get(), other.m_root.get(), degrees, 0);
+        std::set<int> degrees;
 
-        return *this;
-    }
+        for (auto const &[deg, _] : node2->childs)
+            degrees.insert(deg);
+
+        for (auto const &[deg, _] : node1->childs)
+            degrees.insert(deg);
+
+        for (int deg : degrees)
+        {
+            TrieNode* child1;
+            auto it1 = node1->childs.find(deg);
+
+            if (it1 == node1->childs.end())
+            {
+                node1->childs[deg] = std::make_unique<TrieNode>();
+                child1 = node1->childs[deg].get();
+            }
+            else
+            {
+                child1 = it1->second.get();
+            }
+
+            const TrieNode* child2 = nullptr;
+            auto it2 = node2->childs.find(deg);
+            if (it2 != node2->childs.end())
+            {
+                child2 = it2->second.get();
+            }
+
+            dfs_add(child1, child2, depth + 1);
+        }
+    };
+
+    dfs_add(m_root.get(), other.m_root.get(), 0);
+    return *this;
+}
 
     PolyTrie operator+(PolyTrie const &other) const
     {
@@ -222,55 +334,71 @@ public:
     }
 
     PolyTrie &operator-=(PolyTrie const &other)
+{
+    std::function<void(TrieNode*, const TrieNode*, size_t)> dfs_sub =
+        [&](TrieNode* node1, const TrieNode* node2, size_t depth)
     {
-        std::function<void(TrieNode*, const TrieNode*, 
-                       std::vector<int>&, size_t)> dfs_add = 
-            [&](TrieNode* node1, const TrieNode* node2, 
-                std::vector<int>& degrees, size_t depth)
+        if (node2 == nullptr)
+            return;
+
+        if (depth == m_var_names.size())
+        {
+            if (node2->coeff.has_value())
             {
-                if (depth == m_var_names.size())
+                if (node1->coeff.has_value())
                 {
-                    if (node1->coeff.has_value() && node2->coeff.has_value())
-                    {
-                        node1->coeff = node1->coeff.value() - node2->coeff.value();
-                    }
-                    else if(!(node1->coeff.has_value()) && node2->coeff.has_value())
-                    {
-                        node1->coeff = node2->coeff.value();
-                    }
-                    return;
+                    node1->coeff = node1->coeff.value() - node2->coeff.value();
+                }
+                else
+                {
+                    node1->coeff = -node2->coeff.value();
                 }
 
-                std::set<int> all_degrees;
-                for (auto const &[deg, child] : node1->childs) all_degrees.insert(deg);
-                for (auto const &[deg, child] : node2->childs) all_degrees.insert(deg);
-
-                for( auto deg : all_degrees)
+                if (node1->coeff.value() == coeffType(0))
                 {
-                    degrees[depth] = deg;
-                    auto it1 = node1->childs.find(deg);
-                    auto it2 = node2->childs.find(deg);
-                    if (it1 == node1->childs.end())
-                    {
-                        node1->childs[deg] = std::make_unique<TrieNode>();
-                        it1 = node1->childs.find(deg);
-                    }
-
-                    TrieNode *child2 = nullptr;
-                    if (it2 != node2->childs.end())
-                    {
-                        child2 = it2->second.get();
-                    }
-
-                    dfs_add(it1->second.get(), child2, degrees, depth + 1);
+                    node1->coeff.reset();
                 }
-            };
+            }
+            return;
+        }
 
-        std::vector<int> degrees(m_var_names.size(), 0);
-        dfs_add(m_root.get(), other.m_root.get(), degrees, 0);
+        std::set<int> degrees;
 
-        return *this;
-    }
+        for (auto const &[deg, _] : node2->childs)
+            degrees.insert(deg);
+
+        for (auto const &[deg, _] : node1->childs)
+            degrees.insert(deg);
+
+        for (int deg : degrees)
+        {
+            TrieNode* child1;
+            auto it1 = node1->childs.find(deg);
+
+            if (it1 == node1->childs.end())
+            {
+                node1->childs[deg] = std::make_unique<TrieNode>();
+                child1 = node1->childs[deg].get();
+            }
+            else
+            {
+                child1 = it1->second.get();
+            }
+
+            const TrieNode* child2 = nullptr;
+            auto it2 = node2->childs.find(deg);
+            if (it2 != node2->childs.end())
+            {
+                child2 = it2->second.get();
+            }
+
+            dfs_sub(child1, child2, depth + 1);
+        }
+    };
+
+    dfs_sub(m_root.get(), other.m_root.get(), 0);
+    return *this;
+}
 
     PolyTrie operator-(PolyTrie const &other) const
     {
@@ -305,21 +433,131 @@ PolyTrie operator*(PolyTrie const &other) const
         return obj *= other;
     }
 
-
-    // equality operations
-
 private:
-    int lex_order_compare(std::vector<int> const &term1_degs, std::vector<int> const &term2_degs) const
+bool is_devides(std::vector<int> const &a, std::vector<int> const &b)
+{
+    bool devides = true;
+    for (int i = 0; i < a.size(); i++)
     {
-        for (auto i = 0; i < m_var_names.size(); i++)
-        {
-            if (term1_degs[i] > term2_degs[i]){return 1;}
+        if (a[i] > b[i]) return false;
+    }
+    return true;
+}
 
-            else if (term1_degs[i] < term2_degs[i]) {return -1;}
+std::vector<int> devide_monoms(std::vector<int> divisible, std::vector<int> const &divisor)
+{
+    for (int i = 0; i < divisible.size(); i++)
+    {
+        divisible[i] -= divisor[i];
+    }
+    return divisible;
+}
+
+public:
+template <typename Comparator>
+std::pair<std::vector<PolyTrie<coeffType>>, PolyTrie<coeffType>> 
+divide(
+    std::vector<PolyTrie <coeffType> > &divisors,
+    Comparator comp)
+{
+    std::cout << "hello func" << std::endl;
+    std::vector<PolyTrie> qs;
+    qs.reserve(divisors.size());
+
+    for (size_t i = 0; i < divisors.size(); i++)
+    {
+        qs.emplace_back(m_var_names);
+    }
+    PolyTrie r(m_var_names);
+    PolyTrie p(m_var_names);
+    p = *this;
+
+    while(!p.get_supp().empty())
+    {
+        std::cout << "hello while1" << std::endl;
+        bool devided = false;
+        auto lead_monom_p = p.leading_monomial(comp);
+        auto lead_coeff_p = p.leading_coeff(comp);
+
+        for (int i = 0; i < divisors.size(); i++)
+        {
+            std::cout << "hello for1" << std::endl;
+            auto p_lead_monom = p.leading_monomial(comp);
+            auto f_i_lead_monom = (divisors[i]).leading_monomial(comp);
+            auto p_lead_coeff = p.leading_coeff(comp);
+            auto f_i_lead_coeff = (divisors[i]).leading_coeff(comp);
+            if (is_devides(f_i_lead_monom, p_lead_monom))
+            {
+                std::cout << "hello if1" << std::endl;
+                auto new_degs = devide_monoms(p_lead_monom, f_i_lead_monom);
+                auto new_coeff = p_lead_coeff / f_i_lead_coeff;
+                std::cout << "hello if1 after new_coeff" << std::endl;
+                PolyTrie t(m_var_names);
+                t.add_term(new_degs, new_coeff);
+                t.print();
+                qs[i] += t;
+                (divisors[i]).print();
+                auto a = t + divisors[i];
+                std::cout << "hello if1 after devided1" << std::endl;
+                p -= t * divisors[i];
+                std::cout << "hello if1 after devided2" << std::endl;
+                devided = true;
+                break;
+            }
         }
-        return 0;
+
+        if (devided == false)
+        {
+            PolyTrie t(m_var_names);
+            t.add_term(lead_monom_p, lead_coeff_p);
+            r += t;
+            p -= t;
+        }
     }
 
+    return std::make_pair(std::move(qs), std::move(r));;
+}
+
+
+
+public:
+template<typename Comparator>
+std::vector<int> find_multideg(Comparator comp) const
+{
+    auto terms = get_supp();
+    std::vector<int> multideg(m_var_names.size());
+    auto it = std::max_element(
+            terms.begin(),
+            terms.end(),
+            [&](auto const &a, auto const &b)
+            {
+                return comp(a.first, b.first);
+            });
+    return it->first;
+}
+
+template<typename Comparator>
+coeffType leading_coeff(Comparator comp) const
+{
+    auto terms = get_supp();
+    auto deg = find_multideg(comp);
+    return terms.at(deg);
+}
+
+template<typename Comparator>
+std::vector<int> leading_monomial(Comparator comp) const
+{
+    return find_multideg(comp);
+}
+
+template<typename Comparator>
+std::pair<std::vector<int>, coeffType> leading_term(Comparator comp) const
+{
+    return {find_multideg(comp), leading_coeff(comp)};
+}
+
+
+    // equality operations
 public:
     bool operator==(PolyTrie const &other) const
     {
@@ -370,7 +608,7 @@ public:
     {
         if (point.size() != m_var_names.size())
         {
-            throw std::invalid_argument("Размерность точки не совпадает с числом переменных");
+            throw std::invalid_argument("point dimension doesn't match the number of variables");
         }
         
         coeffType result = coeffType(0);
@@ -438,4 +676,5 @@ public:
         }
         return h;
     }
+
 };
