@@ -239,12 +239,16 @@ public:
             {
                 if (degrees[i] != 0)
                 {
+                    if (i > 0 && degrees[i - 1] != 0)
+                    {
+                        std::cout << " * ";
+
+                    }
                     std::cout << m_var_names[i];
                     if (degrees[i] != 1)
                     {
                         std::cout << '^' << degrees[i];
                     }
-                    if (i < m_var_names.size() - 1) {std::cout << " * ";};
 
                 }
             }
@@ -460,7 +464,6 @@ divide(
     std::vector<PolyTrie <coeffType> > &divisors,
     Comparator comp)
 {
-    std::cout << "hello func" << std::endl;
     std::vector<PolyTrie> qs;
     qs.reserve(divisors.size());
 
@@ -474,33 +477,24 @@ divide(
 
     while(!p.get_supp().empty())
     {
-        std::cout << "hello while1" << std::endl;
         bool devided = false;
         auto lead_monom_p = p.leading_monomial(comp);
         auto lead_coeff_p = p.leading_coeff(comp);
 
         for (int i = 0; i < divisors.size(); i++)
         {
-            std::cout << "hello for1" << std::endl;
             auto p_lead_monom = p.leading_monomial(comp);
             auto f_i_lead_monom = (divisors[i]).leading_monomial(comp);
             auto p_lead_coeff = p.leading_coeff(comp);
             auto f_i_lead_coeff = (divisors[i]).leading_coeff(comp);
             if (is_devides(f_i_lead_monom, p_lead_monom))
             {
-                std::cout << "hello if1" << std::endl;
                 auto new_degs = devide_monoms(p_lead_monom, f_i_lead_monom);
                 auto new_coeff = p_lead_coeff / f_i_lead_coeff;
-                std::cout << "hello if1 after new_coeff" << std::endl;
                 PolyTrie t(m_var_names);
                 t.add_term(new_degs, new_coeff);
-                t.print();
                 qs[i] += t;
-                (divisors[i]).print();
-                auto a = t + divisors[i];
-                std::cout << "hello if1 after devided1" << std::endl;
                 p -= t * divisors[i];
-                std::cout << "hello if1 after devided2" << std::endl;
                 devided = true;
                 break;
             }
