@@ -11,6 +11,8 @@
 #include <map>
 #include <functional>
 #include <cmath>
+#include <type_traits>
+#include <complex>
 
 namespace order 
 {
@@ -139,7 +141,7 @@ public:
         {
             throw std::invalid_argument("Number of degrees doesn't match number of variables");
         }
-        if (coeff == 0) {return;}
+        if (coeff == coeffType(0)) {return;}
         if (m_root == nullptr)
         {
             m_root = std::make_unique<TrieNode>();
@@ -199,137 +201,167 @@ public:
 
 public:
     void print() const
+{
+    auto supp = get_supp();
+    bool is_first = true;
+    
+    for (auto const &[degrees, coeff] : supp)
     {
-        auto supp = get_supp();
-        bool is_first = true;
+        if (coeff == coeffType(0)) continue;
         
-        for (auto const &[degrees, coeff] : supp)
-        {
-            if (coeff == coeffType(0)) continue;
-            
-            if (is_first)
-            {
-                if (coeff < coeffType(0))
-                    std::cout << '-';
-                is_first = false;
-            }
-            else
-            {
-                std::cout << (coeff < coeffType(0) ? " - " : " + ");
-            }
-            
-            coeffType abs_coeff = coeff < coeffType(0) ? -coeff : coeff;
-            bool has_variables = false;
-            
-            for (size_t i = 0; i < m_var_names.size(); ++i)
-            {
-                if (degrees[i] != 0)
-                {
-                    has_variables = true;
-                    break;
-                }
-            }
-            
-            if (abs_coeff != coeffType(1) || !has_variables)
-            {
-                std::cout << abs_coeff;
-            }
-            
-            for (size_t i = 0; i < m_var_names.size(); ++i)
-            {
-                if (degrees[i] != 0)
-                {
-                    if (i > 0 && degrees[i - 1] != 0)
-                    {
-                        std::cout << " * ";
-
-                    }
-                    std::cout << m_var_names[i];
-                    if (degrees[i] != 1)
-                    {
-                        std::cout << '^' << degrees[i];
-                    }
-
-                }
-            }
+        bool is_negative = false;
+        if constexpr (std::is_same_v<coeffType, std::complex<double>>) {
+            is_negative = coeff.real() < 0 || (coeff.real() == 0 && coeff.imag() < 0);
+        } else {
+            is_negative = coeff < coeffType(0);
         }
         
         if (is_first)
         {
-            std::cout << '0';
+            if (is_negative) std::cout << '-';
+            is_first = false;
         }
-        std::cout << std::endl;
+        else
+        {
+            std::cout << (is_negative ? " - " : " + ");
+        }
+        
+        coeffType abs_coeff;
+        if constexpr (std::is_same_v<coeffType, std::complex<double>>) 
+        {
+            abs_coeff = std::abs(coeff);
+        } else {
+            abs_coeff = is_negative ? -coeff : coeff;
+        }
+        
+        bool has_variables = false;
+        for (size_t i = 0; i < m_var_names.size(); ++i) {
+            if (degrees[i] != 0) {
+                has_variables = true;
+                break;
+            }
+        }
+        
+        bool print_coeff = true;
+        if constexpr (std::is_same_v<coeffType, std::complex<double>>) 
+        {
+            if (abs_coeff == coeffType(1) && has_variables) {
+                print_coeff = false;
+            }
+        } else {
+            if (abs_coeff == coeffType(1) && has_variables) {
+                print_coeff = false;
+            }
+        }
+        
+        if (print_coeff) 
+        {
+            std::cout << abs_coeff;
+        }
+        
+        bool first_var = true;
+        for (size_t i = 0; i < m_var_names.size(); ++i) {
+            if (degrees[i] != 0) {
+                if (!first_var && !print_coeff) 
+                {
+                } else if (!first_var) {
+                    std::cout << " * ";
+                }
+                std::cout << m_var_names[i];
+                if (degrees[i] != 1) {
+                    std::cout << '^' << degrees[i];
+                }
+                first_var = false;
+            }
+        }
     }
+    
+    if (is_first) {
+        std::cout << '0';
+    }
+    std::cout << std::endl;
+}
 
 
     // arithmetic operations
 public:
-    PolyTrie &operator+=(PolyTrie const &other)
-{
-    std::function<void(TrieNode*, const TrieNode*, size_t)> dfs_add =
-        [&](TrieNode* node1, const TrieNode* node2, size_t depth)
-    {
-        if (node2 == nullptr)
-            return;
 
-        if (depth == m_var_names.size())
+    PolyTrie operator*(const coeffType& scalar) const 
+    {
+        PolyTrie result(m_var_names);
+        auto terms = get_supp();
+        for (const auto& [degs, coeff] : terms) {
+            result.add_term(degs, coeff * scalar);
+        }
+        return result;
+    }
+
+    PolyTrie &operator+=(PolyTrie const &other)
+    {
+        std::function<void(TrieNode*, const TrieNode*, size_t)> dfs_add =
+            [&](TrieNode* node1, const TrieNode* node2, size_t depth)
         {
-            if (node2->coeff.has_value())
+            if (node2 == nullptr)
+                return;
+
+            if (depth == m_var_names.size())
             {
-                if (node1->coeff.has_value())
+                if (node2->coeff.has_value())
                 {
-                    node1->coeff = node1->coeff.value() + node2->coeff.value();
+                    if (node1->coeff.has_value())
+                    {
+                        node1->coeff = node1->coeff.value() + node2->coeff.value();
+                    }
+                    else
+                    {
+                        node1->coeff = node2->coeff.value();
+                    }
+
+                    if (node1->coeff.value() == coeffType(0))
+                    {
+                        node1->coeff.reset();
+                    }
+                }
+                return;
+            }
+
+            std::set<int> degrees;
+
+            for (auto const &[deg, _] : node2->childs)
+                degrees.insert(deg);
+
+            for (auto const &[deg, _] : node1->childs)
+                degrees.insert(deg);
+
+            for (int deg : degrees)
+            {
+                TrieNode* child1;
+                auto it1 = node1->childs.find(deg);
+
+                if (it1 == node1->childs.end())
+                {
+                    node1->childs[deg] = std::make_unique<TrieNode>();
+                    child1 = node1->childs[deg].get();
                 }
                 else
                 {
-                    node1->coeff = node2->coeff.value();
+                    child1 = it1->second.get();
                 }
 
-                if (node1->coeff.value() == coeffType(0))
+                const TrieNode* child2 = nullptr;
+                auto it2 = node2->childs.find(deg);
+                if (it2 != node2->childs.end())
                 {
-                    node1->coeff.reset();
+                    child2 = it2->second.get();
                 }
+
+                dfs_add(child1, child2, depth + 1);
             }
-            return;
-        }
+        };
 
-        std::set<int> degrees;
-
-        for (auto const &[deg, _] : node2->childs)
-            degrees.insert(deg);
-
-        for (auto const &[deg, _] : node1->childs)
-            degrees.insert(deg);
-
-        for (int deg : degrees)
-        {
-            TrieNode* child1;
-            auto it1 = node1->childs.find(deg);
-
-            if (it1 == node1->childs.end())
-            {
-                node1->childs[deg] = std::make_unique<TrieNode>();
-                child1 = node1->childs[deg].get();
-            }
-            else
-            {
-                child1 = it1->second.get();
-            }
-
-            const TrieNode* child2 = nullptr;
-            auto it2 = node2->childs.find(deg);
-            if (it2 != node2->childs.end())
-            {
-                child2 = it2->second.get();
-            }
-
-            dfs_add(child1, child2, depth + 1);
-        }
-    };
-
-    dfs_add(m_root.get(), other.m_root.get(), 0);
-    return *this;
-}
+        dfs_add(m_root.get(), other.m_root.get(), 0);
+        return *this;
+    }
 
     PolyTrie operator+(PolyTrie const &other) const
     {
@@ -500,7 +532,7 @@ divide(
             }
         }
 
-        if (devided == false)
+        if (!devided)
         {
             PolyTrie t(m_var_names);
             t.add_term(lead_monom_p, lead_coeff_p);
@@ -669,6 +701,48 @@ public:
             }
         }
         return h;
+    }
+    
+    std::vector<int> lcm_monoms(const std::vector<int>& a, const std::vector<int>& b) const 
+    {
+        std::vector<int> res(a.size());
+        for (size_t i = 0; i < a.size(); ++i) 
+        {
+            res[i] = std::max(a[i], b[i]);
+        }
+        return res;
+    }
+
+    template<typename Comparator>
+    PolyTrie S_poly(const PolyTrie& g, Comparator comp) const 
+    {
+
+        auto lf = this->leading_monomial(comp);
+        auto lg = g.leading_monomial(comp);
+        auto cf = this->leading_coeff(comp);
+        auto cg = g.leading_coeff(comp);
+
+        auto lcm = lcm_monoms(lf, lg);
+
+
+        std::vector<int> factor_f(lcm.size());
+        std::vector<int> factor_g(lcm.size());
+        for (size_t i = 0; i < lcm.size(); ++i) {
+            factor_f[i] = lcm[i] - lf[i];
+            factor_g[i] = lcm[i] - lg[i];
+        }
+
+        auto term1_coeff = coeffType(1) / cf;
+        PolyTrie term1(this->m_var_names);
+        term1.add_term(factor_f, term1_coeff);
+        term1 *= *this;
+
+        auto term2_coeff = coeffType(1) / cg;
+        PolyTrie term2(this->m_var_names);
+        term2.add_term(factor_g, term2_coeff);
+        term2 *= g;
+
+        return term1 - term2;
     }
 
 };
