@@ -11,7 +11,7 @@ int main()
 {
     using namespace order;
     // exersise 2.6.5 from Кокс book
-    std::cout << "exersise 2.6.5 from Кокс book" << std::endl;
+    std::cout << "exercise 2.6.5 from Кокс book" << std::endl;
     //  a)
     std::cout << "a)" << std::endl;
     std::cout << "a)" << std::endl;

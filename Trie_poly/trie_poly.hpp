@@ -30,6 +30,20 @@ namespace order
         }
     };
 
+    struct InvLex
+    {
+        bool operator()(const std::vector<int>& a,
+                        const std::vector<int>& b) const
+        {
+            for (size_t i = a.size() - 1; i > 0; i--)
+            {
+                if (a[i] != b[i])
+                    return a[i] < b[i];
+            }
+            return false;
+        }
+    };
+
     struct GrLex
     {
         bool operator()(const std::vector<int>& a,
@@ -285,6 +299,11 @@ public:
 
     // arithmetic operations
 public:
+
+    bool isZero() const 
+    {
+        return get_supp().empty();
+    }
 
     PolyTrie operator*(const coeffType& scalar) const 
     {
@@ -745,4 +764,32 @@ public:
         return term1 - term2;
     }
 
+public:
+    template<typename Comparator>
+    bool S_poly_reduces_to_zero(PolyTrie<coeffType>& gi, 
+                                PolyTrie<coeffType>& gj,
+                                std::vector<PolyTrie<coeffType>>& basis,
+                                Comparator comp) 
+    {
+        auto S = gi.S_poly(gj, comp);
+        auto [quotients, remainder] = S.divide(basis, comp);
+        return remainder.isZero();
+    }
+
+    template<typename Comparator>
+    bool isGroebnerBasis(std::vector<PolyTrie<coeffType>>& basis, Comparator comp) 
+    {
+        size_t s = basis.size();
+        for (size_t i = 0; i < s; ++i) 
+        {
+            for (size_t j = i + 1; j < s; ++j) 
+            {
+                if (!S_poly_reduces_to_zero(basis[i], basis[j], basis, comp)) 
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 };
