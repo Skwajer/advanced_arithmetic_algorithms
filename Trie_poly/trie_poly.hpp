@@ -214,6 +214,20 @@ public:
     }
 
 public:
+std::string to_superscript(int n) const 
+{
+        static const char* sup_digits[] = {"⁰", "¹", "²", "³", "⁴", "⁵",
+            "⁶", "⁷", "⁸", "⁹"};
+        std::string result;
+        std::string num = std::to_string(n);
+        
+        for (char c : num) {
+            result += sup_digits[c - '0'];
+        }
+        return result;
+    }
+
+public:
     void print() const
 {
     auto supp = get_supp();
@@ -224,9 +238,12 @@ public:
         if (coeff == coeffType(0)) continue;
         
         bool is_negative = false;
-        if constexpr (std::is_same_v<coeffType, std::complex<double>>) {
+        if constexpr (std::is_same_v<coeffType, std::complex<double>>) 
+        {
             is_negative = coeff.real() < 0 || (coeff.real() == 0 && coeff.imag() < 0);
-        } else {
+        } 
+        else 
+        {
             is_negative = coeff < coeffType(0);
         }
         
@@ -259,11 +276,15 @@ public:
         bool print_coeff = true;
         if constexpr (std::is_same_v<coeffType, std::complex<double>>) 
         {
-            if (abs_coeff == coeffType(1) && has_variables) {
+            if (abs_coeff == coeffType(1) && has_variables) 
+            {
                 print_coeff = false;
             }
-        } else {
-            if (abs_coeff == coeffType(1) && has_variables) {
+        } 
+        else 
+        {
+            if (abs_coeff == coeffType(1) && has_variables) 
+            {
                 print_coeff = false;
             }
         }
@@ -273,24 +294,30 @@ public:
             std::cout << abs_coeff;
         }
         
-        bool first_var = true;
-        for (size_t i = 0; i < m_var_names.size(); ++i) {
-            if (degrees[i] != 0) {
-                if (!first_var && !print_coeff) 
-                {
-                } else if (!first_var) {
-                    std::cout << " * ";
-                }
+        bool prev_var = true;
+        for (size_t i = 0; i < m_var_names.size(); ++i) 
+        {
+            if (degrees[i] != 0) 
+            {
                 std::cout << m_var_names[i];
-                if (degrees[i] != 1) {
-                    std::cout << '^' << degrees[i];
+                if (degrees[i] != 1) 
+                {
+                    if (i < 10)
+                    {
+                        std::cout << to_superscript(degrees[i]);
+                    }
+                    else 
+                    {
+                        std::cout << '^' << degrees[i];
+                    }
                 }
-                first_var = false;
+                prev_var = false;
             }
         }
     }
     
-    if (is_first) {
+    if (is_first) 
+    {
         std::cout << '0';
     }
     std::cout << std::endl;
@@ -309,7 +336,8 @@ public:
     {
         PolyTrie result(m_var_names);
         auto terms = get_supp();
-        for (const auto& [degs, coeff] : terms) {
+        for (const auto& [degs, coeff] : terms) 
+        {
             result.add_term(degs, coeff * scalar);
         }
         return result;
@@ -615,7 +643,7 @@ public:
         {
             auto it2 = terms2.find(degs);
             if (it2 == terms2.end()) {return false;}
-            if (coeff != it2.value()) {return false;}
+            if (coeff != it2->second) {return false;}
         }
         return true;
     }
@@ -791,5 +819,35 @@ public:
             }
         }
         return true;
+    }
+
+public:
+    template<typename Comparator>
+    std::vector<PolyTrie<coeffType>> 
+    build_GrobnerBasis(std::vector<PolyTrie<coeffType>>& basis,
+                       Comparator comp)
+    {
+        auto G = basis;
+        std::vector<PolyTrie<coeffType>> G_;
+        G_.reserve(G.size());
+        while (G_ != G)
+        {
+            G_ = G;
+            for (size_t i = 0; i < G_.size(); i++)
+            {
+                for (size_t j = i + 1; j < G_.size(); j++)
+                {
+                    auto p = G_[i];
+                    auto q = G_[j];
+                    auto S = p.S_poly(q, comp);
+                    auto [quotients, remainder] = S.divide(G_, comp);
+                    if (!(remainder.isZero()))
+                    {
+                        G.push_back(remainder);
+                    }
+                }
+            }
+        }
+        return G;
     }
 };

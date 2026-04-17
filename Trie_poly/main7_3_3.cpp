@@ -93,7 +93,7 @@ int main()
         std::cout << std::endl;  
     }
 
-    std::cout << "exercise 2.6.9 from Кокс book" << std::endl << std::endl;
+    std::cout << "exercise 21.21 from Von zur Gathen Modern Computer Algebra:" << std::endl << std::endl;
     std::cout << "i)" << std::endl;
     {
         std::vector<PolyTrie<double>> basis;
