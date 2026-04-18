@@ -830,20 +830,38 @@ public:
         auto G = basis;
         std::vector<PolyTrie<coeffType>> G_;
         G_.reserve(G.size());
-        while (G_ != G)
+        bool changed = true;
+
+        while (changed)
         {
+            changed = false;
             G_ = G;
+
             for (size_t i = 0; i < G_.size(); i++)
             {
                 for (size_t j = i + 1; j < G_.size(); j++)
                 {
-                    auto p = G_[i];
-                    auto q = G_[j];
+                    auto &p = G_[i];
+                    auto &q = G_[j];
                     auto S = p.S_poly(q, comp);
                     auto [quotients, remainder] = S.divide(G_, comp);
-                    if (!(remainder.isZero()))
+                    if (!remainder.isZero())
                     {
-                        G.push_back(remainder);
+                        bool exists = false;
+                        for (auto const& g : G)
+                        {
+                            if (g == remainder)
+                            {
+                                exists = true;
+                                break;
+                            }
+                        }
+
+                        if (!exists)
+                        {
+                            G.push_back(remainder);
+                            changed = true;
+                        }
                     }
                 }
             }

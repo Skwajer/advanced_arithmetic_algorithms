@@ -255,5 +255,115 @@ int main()
 
         std::cout << std::endl;
     }
+
+    std::cout << "--------------------------------------------------------" << std::endl;
+    std::cout << "EXERCISE 21.20 VON ZUR GATTEN MODERN COMPUTER ALGEBRA" << std::endl << std::endl;
+    {
+        std::cout << "i)" << "LEX order:" << std::endl;
+        std::vector<PolyTrie<double>> basis;
+        
+        PolyTrie<double> f1({"x", "y"});
+        f1.add_term({2, 0}, 1);
+        f1.add_term({0, 1}, 1);
+        f1.add_term({0, 0}, -1);
+
+        PolyTrie<double> f2({"x", "y"});
+        f2.add_term({1, 1}, 1);
+        f2.add_term({1, 0}, -1);
+        
+        basis.push_back(f1);
+        basis.push_back(f2);
+        auto Grobner_basis_lex =
+            f1.PolyTrie<double>::build_GrobnerBasis(basis, Lex{});
+        for (size_t i = 0; i < Grobner_basis_lex.size(); i++)
+        {
+            std::cout << "f" << i+1 << " = ";
+            Grobner_basis_lex[i].print();
+        }
+
+        std::cout << std::endl;
+    }
+
+    std::cout << "--------------------------------------------------------" << std::endl;
+    std::cout << "EXERCISE 21.23 VON ZUR GATTEN MODERN COMPUTER ALGEBRA" << std::endl << std::endl;
+    {
+        std::vector<PolyTrie<double>> basis;
+        
+        PolyTrie<double> f1({"z", "y", "x"});
+        f1.add_term({0, 1, 2}, 1);
+        f1.add_term({1, 1, 0}, -2);
+        f1.add_term({0, 0, 0}, 1);
+
+        PolyTrie<double> f2({"z", "y", "x"});
+        f2.add_term({0, 2, 1}, 1);
+        f2.add_term({2, 0, 0}, -1);
+        f2.add_term({0, 0, 1}, 2);
+
+        PolyTrie<double> f3({"z", "y", "x"});
+        f3.add_term({1, 2, 0}, 1);
+        f3.add_term({0, 0, 1}, -1);
+        f3.add_term({0, 0, 0}, 5);
+        
+        basis.push_back(f1);
+        basis.push_back(f2);
+        basis.push_back(f3);
+
+        std::cout << "\nGRLEX order:" << std::endl;
+        auto Grobner_basis_grlex =
+            f1.PolyTrie<double>::build_GrobnerBasis(basis, GrLex{});
+        for (size_t i = 0; i < Grobner_basis_grlex.size(); i++)
+        {
+            std::cout << "f" << i+1 << " = ";
+            Grobner_basis_grlex[i].print();
+        }
+
+        std::cout << "\nGREVLEX order:" << std::endl;
+        auto Grobner_basis_grevlex =
+            f1.PolyTrie<double>::build_GrobnerBasis(basis, GrevLex{});
+        for (size_t i = 0; i < Grobner_basis_grevlex.size(); i++)
+        {
+            std::cout << "f" << i+1 << " = ";
+            Grobner_basis_grevlex[i].print();
+        }
+
+        std::cout << std::endl;
+    }
+
+    std::cout << "--------------------------------------------------------" << std::endl;
+    std::cout << "EXERCISE 21.23 VON ZUR GATTEN MODERN COMPUTER ALGEBRA" << std::endl << std::endl;
+    {
+        std::vector<PolyTrie<double>> basis;
+        
+        std::cout << "z > y > x" << std::endl;
+        PolyTrie<double> f1({"z", "y", "x"});
+        f1.add_term({0, 1, 2}, 1);
+        f1.add_term({1, 1, 0}, -2);
+        f1.add_term({0, 0, 0}, 1);
+
+        PolyTrie<double> f2({"z", "y", "x"});
+        f2.add_term({0, 2, 1}, 1);
+        f2.add_term({2, 0, 0}, -1);
+        f2.add_term({0, 0, 1}, 2);
+
+        PolyTrie<double> f3({"z", "y", "x"});
+        f3.add_term({1, 2, 0}, 1);
+        f3.add_term({0, 0, 1}, -1);
+        f3.add_term({0, 0, 0}, 5);
+        
+        basis.push_back(f1);
+        basis.push_back(f2);
+        basis.push_back(f3);
+
+        std::cout << "LEX order:" << std::endl;
+        auto Grobner_basis_lex =
+            f1.PolyTrie<double>::build_GrobnerBasis(basis, Lex{});
+        for (size_t i = 0; i < Grobner_basis_lex.size(); i++)
+        {
+            std::cout << "f" << i+1 << " = ";
+            Grobner_basis_lex[i].print();
+        }
+
+        std::cout << std::endl;
+    }
     
 }
