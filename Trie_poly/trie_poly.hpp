@@ -326,22 +326,19 @@ public:
 
     // arithmetic operations
 public:
-
-    bool isZero() const 
-    {
-        return get_supp().empty();
-    }
-
-    PolyTrie operator*(const coeffType& scalar) const 
-    {
-        PolyTrie result(m_var_names);
-        auto terms = get_supp();
-        for (const auto& [degs, coeff] : terms) 
-        {
-            result.add_term(degs, coeff * scalar);
+bool isZero() const {
+    auto terms = get_supp();
+    if (terms.empty()) return true;
+    
+    for (const auto& [degs, coeff] : terms) {
+        if constexpr (std::is_same_v<coeffType, double>) {
+            if (std::abs(coeff) > 1e-8) return false;
+        } else {
+            if (coeff != coeffType(0)) return false;
         }
-        return result;
     }
+    return true;
+}
 
     PolyTrie &operator+=(PolyTrie const &other)
     {
@@ -487,6 +484,39 @@ public:
     {
         PolyTrie obj = *this;
         return obj -= other;
+    }
+
+    PolyTrie& operator*=(const coeffType& c)
+    {
+        if (c == coeffType(0))
+        {
+            m_root = std::make_unique<TrieNode>();
+            return *this;
+        }
+
+        std::function<void(TrieNode*)> dfs_mul =
+            [&](TrieNode* node)
+        {
+            if (!node) return;
+
+            if (node->coeff.has_value())
+            {
+                node->coeff = node->coeff.value() * c;
+
+                if (node->coeff.value() == coeffType(0))
+                {
+                    node->coeff.reset();
+                }
+            }
+
+            for (auto& [deg, child] : node->childs)
+            {
+                dfs_mul(child.get());
+            }
+        };
+
+        dfs_mul(m_root.get());
+        return *this;
     }
 
     PolyTrie &operator*=(PolyTrie const &other)
@@ -847,25 +877,64 @@ public:
                     auto [quotients, remainder] = S.divide(G_, comp);
                     if (!remainder.isZero())
                     {
-                        bool exists = false;
-                        for (auto const& g : G)
-                        {
-                            if (g == remainder)
-                            {
-                                exists = true;
-                                break;
-                            }
-                        }
 
-                        if (!exists)
-                        {
-                            G.push_back(remainder);
-                            changed = true;
-                        }
+                        G.push_back(remainder);
+                        changed = true;
                     }
                 }
             }
         }
         return G;
+    }
+
+public:
+    template<typename Comparator>
+    std::vector<PolyTrie<coeffType>> 
+    build_ReducedGrobnerBasis(std::vector<PolyTrie<coeffType>>& basis,
+                       Comparator comp)
+    {
+        auto G = build_GrobnerBasis(basis, comp);
+        std::vector<PolyTrie<coeffType>> Gmin;
+        for (size_t i = 0; i < G.size(); i++)
+        {
+            auto g = G[i];
+            g *= 1 / g.leading_coeff(comp);
+            bool is_divide = false;
+            for (size_t j = 0; j < G.size(); j++)
+            {
+                if ((i != j) && is_devides(G[j].leading_monomial(comp), g.leading_monomial(comp)))
+                {
+                    is_divide = true;
+                    break;
+                }
+            }
+            if (!is_divide)
+            {
+                Gmin.push_back(g);
+            }
+
+        }
+
+        std::vector<PolyTrie<coeffType>> result;
+        for (size_t i = 0; i < Gmin.size(); i++)
+        {
+            auto g = Gmin[i];
+            std::vector<PolyTrie<coeffType>> others;
+            others.reserve(Gmin.size() - 1);
+            for (auto gi : Gmin)
+            {
+                if (gi != g)
+                {
+                    others.push_back(gi);
+                }
+            }
+            auto [_, r] = g.divide(others, comp);
+            if (!r.isZero())
+            {
+                r *= 1 / r.leading_coeff(comp);
+                result.push_back(r);
+            }
+        }
+        return result;
     }
 };
