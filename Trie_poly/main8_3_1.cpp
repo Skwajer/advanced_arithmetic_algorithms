@@ -329,5 +329,43 @@ int main()
 
         std::cout << std::endl;
     }
-    
+
+    std::cout << "EXERCISE 2.7.9 from Koks book" << std::endl << std::endl;
+    {
+        std::vector<PolyTrie<double>> basis;
+        
+        PolyTrie<double> f1({"x", "y", "z", "w"});
+        f1.add_term({1, 0, 0, 0}, 3);
+        f1.add_term({0, 1, 0, 0}, -6);
+        f1.add_term({0, 0, 1, 0}, -2);
+
+        PolyTrie<double> f2({"x", "y", "z", "w"});
+        f2.add_term({1, 0, 0, 0}, 2);
+        f2.add_term({0, 1, 0, 0}, -4);
+        f2.add_term({0, 0, 0, 1}, 4);
+
+        PolyTrie<double> f3({"x", "y", "z", "w"});
+        f3.add_term({1, 0, 0, 0}, 1);
+        f3.add_term({0, 1, 0, 0}, -2);
+        f3.add_term({0, 0, 1, 0}, -1);
+        f3.add_term({0, 0, 0, 1}, -1);
+        
+        basis.push_back(f1);
+        basis.push_back(f2);
+        basis.push_back(f3);
+
+        std::cout << "\nLEX order:" << std::endl;
+        auto Grobner_basis_grlex =
+            f1.PolyTrie<double>::build_ReducedGrobnerBasis(basis, Lex{});
+        for (size_t i = 0; i < Grobner_basis_grlex.size(); i++)
+        {
+            std::cout << "f" << i+1 << " = ";
+            Grobner_basis_grlex[i].print();
+        }
+
+        std::cout << std::endl;
+    }
+
+
+    return 0;
 }

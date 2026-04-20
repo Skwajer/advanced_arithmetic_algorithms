@@ -900,9 +900,9 @@ public:
             auto g = G[i];
             g *= 1 / g.leading_coeff(comp);
             bool is_divide = false;
-            for (size_t j = 0; j < G.size(); j++)
+            for (size_t j = i + 1; j < G.size(); j++)
             {
-                if ((i != j) && is_devides(G[j].leading_monomial(comp), g.leading_monomial(comp)))
+                if (is_devides(G[j].leading_monomial(comp), g.leading_monomial(comp)))
                 {
                     is_divide = true;
                     break;
@@ -912,7 +912,6 @@ public:
             {
                 Gmin.push_back(g);
             }
-
         }
 
         std::vector<PolyTrie<coeffType>> result;
@@ -929,11 +928,7 @@ public:
                 }
             }
             auto [_, r] = g.divide(others, comp);
-            if (!r.isZero())
-            {
-                r *= 1 / r.leading_coeff(comp);
-                result.push_back(r);
-            }
+            result.push_back(r);
         }
         return result;
     }
